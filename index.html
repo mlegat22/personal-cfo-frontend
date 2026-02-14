@@ -722,8 +722,8 @@
         </div>
     </div>
 
-    <!-- Admin Panel Page -->
-<div id="admin" class="page">
+<!-- Admin Panel Page -->
+<div id="admin" class="page" style="display: none;">
     <div class="page-header">
         <h1>👤 Admin Panel</h1>
         <p>Manage user access requests</p>
@@ -732,16 +732,19 @@
     <!-- Pending Approvals -->
     <div class="stat-card">
         <h3 style="margin-bottom: 16px;">⏳ Pending Approval Requests</h3>
-        <div id="pending-users-list"></div>
+        <div id="pending-users-list" style="min-height: 50px;">
+            <p style="color: var(--text-muted); padding: 16px;">Loading...</p>
+        </div>
     </div>
 
-    <!-- All Users -->
+    <!-- Approved Users -->
     <div class="stat-card">
         <h3 style="margin-bottom: 16px;">✅ Approved Users</h3>
-        <div id="approved-users-list"></div>
+        <div id="approved-users-list" style="min-height: 50px;">
+            <p style="color: var(--text-muted); padding: 16px;">Loading...</p>
+        </div>
     </div>
 </div>
-
     <script>
         const API_URL = 'https://personal-cfo-backend-production-dc3d.up.railway.app';
         let authToken = null;
