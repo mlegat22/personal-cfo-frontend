@@ -500,6 +500,9 @@
                     </div>
                     <div class="nav-item" data-page="settings">
                         <span>⚙️</span> Settings
+		    </div>
+		    <div class="nav-item admin-only" data-page="admin" style="display: none;">
+                        <span>👤</span> Admin Panel
                     </div>
                 </div>
             </nav>
@@ -718,6 +721,26 @@
             </div>
         </div>
     </div>
+
+    <!-- Admin Panel Page -->
+<div id="admin" class="page">
+    <div class="page-header">
+        <h1>👤 Admin Panel</h1>
+        <p>Manage user access requests</p>
+    </div>
+
+    <!-- Pending Approvals -->
+    <div class="stat-card">
+        <h3 style="margin-bottom: 16px;">⏳ Pending Approval Requests</h3>
+        <div id="pending-users-list"></div>
+    </div>
+
+    <!-- All Users -->
+    <div class="stat-card">
+        <h3 style="margin-bottom: 16px;">✅ Approved Users</h3>
+        <div id="approved-users-list"></div>
+    </div>
+</div>
 
     <script>
         const API_URL = 'https://personal-cfo-backend-production-dc3d.up.railway.app';
@@ -1065,81 +1088,89 @@
         }
 
         // Login
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            hideMessages();
-
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            const btn = document.getElementById('login-btn');
-
-            btn.disabled = true;
-            btn.innerHTML = 'Signing in...<span class="loading"></span>';
-
-            try {
-                const response = await fetch(`${API_URL}/api/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    authToken = data.token;
-                    currentUser = data.user;
-                    localStorage.setItem('authToken', authToken);
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    showDashboard();
-                } else {
-                    showError(data.error || 'Login failed');
-                }
-            } catch (error) {
-                showError('Unable to connect to server. Make sure the backend is running.');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Sign In';
-            }
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideMessages();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true;
+    btn.innerHTML = 'Signing in...<span class="loading"></span>';
+    
+    try {
+        const response = await fetch(`${API_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
         });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            authToken = data.token;
+            currentUser = data.user;
+            localStorage.setItem('authToken', authToken);
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            showDashboard();
+        } else {
+            if (data.pending) {
+                // Account pending approval
+                showError('⏳ Your account is pending admin approval.\n\nPlease wait for approval before logging in.');
+            } else {
+                showError(data.error || 'Login failed');
+            }
+        }
+    } catch (error) {
+        showError('Unable to connect to server. Make sure the backend is running.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+    }
+});
 
         // Signup
-        document.getElementById('signup-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            hideMessages();
-
-            const name = document.getElementById('signup-name').value;
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-            const btn = document.getElementById('signup-btn');
-
-            btn.disabled = true;
-            btn.innerHTML = 'Creating account...<span class="loading"></span>';
-
-            try {
-                const response = await fetch(`${API_URL}/api/auth/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    authToken = data.token;
-                    currentUser = data.user;
-                    localStorage.setItem('authToken', authToken);
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    showDashboard();
-                } else {
-                    showError(data.error || 'Registration failed');
-                }
-            } catch (error) {
-                showError('Unable to connect to server. Make sure the backend is running.');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Create Account';
-            }
+document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideMessages();
+    const name = document.getElementById('signup-name').value;
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
+    const btn = document.getElementById('signup-btn');
+    btn.disabled = true;
+    btn.innerHTML = 'Creating account...<span class="loading"></span>';
+    
+    try {
+        const response = await fetch(`${API_URL}/api/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password })
         });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            if (data.pending) {
+                // Account created but pending approval
+                alert('✅ Account created!\n\n⏳ Your account is pending admin approval.\n\nYou will receive access once an administrator approves your request.');
+                showLogin();
+            } else {
+                // Account approved immediately (won't happen with approval system)
+                authToken = data.token;
+                currentUser = data.user;
+                localStorage.setItem('authToken', authToken);
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                showDashboard();
+            }
+        } else {
+            showError(data.error || 'Registration failed');
+        }
+    } catch (error) {
+        showError('Unable to connect to server. Make sure the backend is running.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+    }
+});
 
         // Logout
         function logout() {
@@ -1162,6 +1193,7 @@
             document.getElementById('settings-email').textContent = currentUser.email;
             loadImportedData();
             loadDashboardData();
+            checkAdmin();
         }
 
         // ==================== PLAID INTEGRATION ====================
@@ -1283,6 +1315,178 @@
                 showDashboard();
             }
         });
+
+// ==================== ADMIN APPROVAL FUNCTIONS ====================
+
+// Check if admin and show admin panel
+async function checkAdmin() {
+    if (currentUser?.email === 'matthewlegat@gmail.com') {
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
+    } else {
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+    }
+}
+
+// Load pending users
+async function loadPendingUsers() {
+    try {
+        const response = await fetch(`${API_URL}/api/admin/pending-users`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await response.json();
+        
+        const pendingList = document.getElementById('pending-users-list');
+        
+        if (data.pending && data.pending.length > 0) {
+            pendingList.innerHTML = data.pending.map(user => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 2px solid var(--accent-orange); border-radius: 8px; margin-bottom: 12px; background: rgba(248, 81, 73, 0.05);">
+                    <div>
+                        <div style="font-weight: 600; font-size: 16px;">${user.name}</div>
+                        <div style="color: var(--text-secondary); margin-top: 4px;">${user.email}</div>
+                        <div style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">
+                            Requested: ${new Date(user.requested_at).toLocaleString()}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="approveUser(${user.id}, '${user.email}')" 
+                                class="btn" 
+                                style="background: var(--accent-green);">
+                            ✅ Approve
+                        </button>
+                        <button onclick="denyUser(${user.id}, '${user.email}')" 
+                                class="btn" 
+                                style="background: var(--accent-orange);">
+                            ❌ Deny
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            pendingList.innerHTML = '<p style="color: var(--text-muted); padding: 16px;">No pending requests</p>';
+        }
+        
+        // Also load approved users
+        loadApprovedUsers();
+    } catch (error) {
+        console.error('Error loading pending users:', error);
+    }
+}
+
+// Load approved users
+async function loadApprovedUsers() {
+    try {
+        const response = await fetch(`${API_URL}/api/admin/users`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await response.json();
+        
+        const approvedList = document.getElementById('approved-users-list');
+        const approved = data.users.filter(u => u.approved);
+        
+        if (approved.length > 0) {
+            approvedList.innerHTML = approved.map(user => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border-color);">
+                    <div>
+                        <div style="font-weight: 600;">${user.name}</div>
+                        <div style="color: var(--text-muted); font-size: 13px;">${user.email}</div>
+                        <div style="color: var(--text-muted); font-size: 12px;">
+                            Joined: ${new Date(user.created_at).toLocaleDateString()}
+                        </div>
+                    </div>
+                    ${user.email !== currentUser.email ? `
+                        <button onclick="deleteUser(${user.id}, '${user.email}')" 
+                                class="btn" 
+                                style="background: var(--accent-orange);">
+                            Delete
+                        </button>
+                    ` : '<span style="color: var(--accent-green); font-weight: 600;">You (Admin)</span>'}
+                </div>
+            `).join('');
+        } else {
+            approvedList.innerHTML = '<p style="color: var(--text-muted);">No approved users yet</p>';
+        }
+    } catch (error) {
+        console.error('Error loading approved users:', error);
+    }
+}
+
+// Approve user
+async function approveUser(userId, email) {
+    if (!confirm(`Approve ${email}?`)) return;
+    
+    try {
+        const response = await fetch(`${API_URL}/api/admin/approve-user/${userId}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        
+        if (response.ok) {
+            alert(`✅ ${email} has been approved and can now login!`);
+            loadPendingUsers();
+        } else {
+            alert('❌ Failed to approve user');
+        }
+    } catch (error) {
+        alert('❌ Error approving user');
+        console.error(error);
+    }
+}
+
+// Deny user
+async function denyUser(userId, email) {
+    if (!confirm(`Deny and delete account for ${email}? This cannot be undone.`)) return;
+    
+    try {
+        const response = await fetch(`${API_URL}/api/admin/deny-user/${userId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        
+        if (response.ok) {
+            alert(`❌ ${email} has been denied`);
+            loadPendingUsers();
+        } else {
+            alert('❌ Failed to deny user');
+        }
+    } catch (error) {
+        alert('❌ Error denying user');
+        console.error(error);
+    }
+}
+
+// Delete approved user
+async function deleteUser(userId, email) {
+    if (!confirm(`Delete ${email}? This cannot be undone.`)) return;
+    
+    try {
+        const response = await fetch(`${API_URL}/api/admin/users/${userId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        
+        if (response.ok) {
+            alert(`✅ ${email} deleted`);
+            loadPendingUsers();
+        } else {
+            alert('❌ Failed to delete user');
+        }
+    } catch (error) {
+        alert('❌ Error deleting user');
+        console.error(error);
+    }
+}
+
+// Load pending users when admin page is shown
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const page = this.getAttribute('data-page');
+            if (page === 'admin') {
+                loadPendingUsers();
+            }
+        });
+    });
+});
     </script>
 </body>
 </html>
