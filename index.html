@@ -698,6 +698,8 @@
                 </div>
                 <!-- IBKR Status Section (shown when connected) -->
                 <div id="ibkr-status-section" style="display: none;"></div>
+                <!-- Direct Connect Institutions (shown when available) -->
+                <div id="direct-connect-section" style="display: none;"></div>
                 <div class="stats-grid" id="accounts-summary-grid">
                     <div class="stat-card">
                         <div class="stat-label">Total Accounts</div>
@@ -1583,9 +1585,10 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
                         localStorage.removeItem('plaidLinkType');
                         window.history.replaceState({}, document.title, window.location.pathname);
                     },
-                    onExit: () => {
+                    onExit: (err, metadata) => {
                         localStorage.removeItem('plaidLinkType');
                         window.history.replaceState({}, document.title, window.location.pathname);
+                        if (err) handlePlaidLinkError(err, metadata);
                     }
                 });
 
@@ -1627,8 +1630,9 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
                         await exchangePublicToken(public_token, label);
                         localStorage.removeItem('plaidLinkType');
                     },
-                    onExit: () => {
+                    onExit: (err, metadata) => {
                         localStorage.removeItem('plaidLinkType');
+                        if (err) handlePlaidLinkError(err, metadata);
                     }
                 });
 
@@ -1658,6 +1662,90 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
                 }
             } catch (error) {
                 console.error('Error exchanging token:', error);
+            }
+        }
+
+        async function handlePlaidLinkError(error, metadata) {
+            if (!error) return; // User exited voluntarily, no error
+
+            const payload = {
+                institution_name: metadata?.institution?.name || null,
+                institution_id: metadata?.institution?.institution_id || null,
+                error_code: error.error_code || null,
+                error_message: error.error_message || error.display_message || null
+            };
+
+            console.log('Plaid Link error:', payload);
+
+            try {
+                const res = await fetch(`${API_URL}/api/plaid/link-error`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.use_direct_integration) {
+                        // Backend says this institution supports direct connection
+                        const instName = payload.institution_name || 'this institution';
+                        alert(`Plaid connection failed for ${instName}. Opening direct connection form instead.`);
+                        showIBKRModal();
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.error('Error reporting Plaid link error:', err);
+            }
+
+            // Generic fallback error for non-direct-integration cases
+            if (error.error_code) {
+                alert(`Connection error: ${error.display_message || error.error_message || 'Please try again.'}`);
+            }
+        }
+
+        async function loadDirectConnectInstitutions() {
+            try {
+                const res = await fetch(`${API_URL}/api/institutions/direct-connect`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!res.ok) {
+                    document.getElementById('direct-connect-section').style.display = 'none';
+                    return;
+                }
+
+                const data = await res.json();
+                const institutions = data.institutions || [];
+                const section = document.getElementById('direct-connect-section');
+
+                if (institutions.length === 0) {
+                    section.style.display = 'none';
+                    return;
+                }
+
+                section.style.display = 'block';
+                section.innerHTML = institutions.map(inst => `
+                    <div class="stat-card" style="margin-bottom: 16px; border-left: 3px solid #8957e5;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h3 style="font-size: 16px;">${inst.name || 'Direct Connection Available'}</h3>
+                                <p style="color: var(--text-secondary); font-size: 13px; margin-top: 4px;">
+                                    ${inst.description || 'Connect directly instead of using Plaid for a more reliable connection.'}
+                                </p>
+                            </div>
+                            <button class="btn btn-primary" onclick="${inst.connect_action || 'showIBKRModal()'}" style="width: auto; padding: 10px 20px; background: #8957e5;">
+                                Connect ${inst.short_name || inst.name || 'Direct'}
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                // Silently fail — direct connect is optional
+                document.getElementById('direct-connect-section').style.display = 'none';
             }
         }
 
@@ -2068,8 +2156,9 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
         // ==================== ACCOUNTS PAGE ====================
 
         async function loadAccountsPage() {
-            // Load IBKR status in parallel with accounts
+            // Load IBKR status and direct-connect institutions in parallel with accounts
             loadIBKRStatus();
+            loadDirectConnectInstitutions();
 
             try {
                 const res = await fetch(`${API_URL}/api/accounts`, {
