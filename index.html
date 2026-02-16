@@ -1213,6 +1213,12 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
 
                 const data = await response.json();
 
+                if (!response.ok || !data.link_token) {
+                    console.error('Failed to create link token:', data);
+                    alert('Error creating bank connection. Please try again.');
+                    return;
+                }
+
                 const handler = Plaid.create({
                     token: data.link_token,
                     onSuccess: async (public_token) => {
@@ -1235,7 +1241,7 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authToken}`
                     },
-                    body: JSON.stringify({ publicToken })
+                    body: JSON.stringify({ public_token: publicToken })
                 });
 
                 const data = await response.json();
