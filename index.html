@@ -621,11 +621,51 @@
             <div id="portfolio" class="page">
                 <div class="page-header">
                     <h1>Investment Portfolio</h1>
-                    <p>Track your investments</p>
+                    <p>Track your investment holdings and performance</p>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Portfolio Value</div>
+                        <div class="stat-value" id="portfolio-total-value">$0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Cost Basis</div>
+                        <div class="stat-value" id="portfolio-total-cost">$0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Gain/Loss</div>
+                        <div class="stat-value" id="portfolio-total-gl">$0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Holdings</div>
+                        <div class="stat-value" id="portfolio-holdings-count">0</div>
+                    </div>
+                </div>
+                <div class="stat-card" style="margin-bottom: 24px;">
+                    <h3 style="margin-bottom: 16px;">Portfolio Allocation</h3>
+                    <canvas id="portfolio-chart" style="max-height: 300px;"></canvas>
+                    <div id="portfolio-chart-empty" style="text-align: center; padding: 24px; color: var(--text-muted); display: none;">Import portfolio data to see allocation chart</div>
                 </div>
                 <div class="stat-card">
-                    <h3>Portfolio page - Ready to build!</h3>
-                    <p style="color: var(--text-secondary); margin-top: 12px;">This page will show your investment holdings.</p>
+                    <h3 style="margin-bottom: 16px;">Holdings</h3>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <th style="text-align: left; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Symbol</th>
+                                    <th style="text-align: left; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Name</th>
+                                    <th style="text-align: right; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Shares</th>
+                                    <th style="text-align: right; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Cost Basis</th>
+                                    <th style="text-align: right; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Price</th>
+                                    <th style="text-align: right; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Value</th>
+                                    <th style="text-align: right; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Gain/Loss</th>
+                                </tr>
+                            </thead>
+                            <tbody id="portfolio-table-body">
+                                <tr><td colspan="7" style="padding: 24px; text-align: center; color: var(--text-muted);">No holdings yet. Import a portfolio CSV to get started.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -633,11 +673,44 @@
             <div id="networth" class="page">
                 <div class="page-header">
                     <h1>Net Worth</h1>
-                    <p>Track your net worth over time</p>
+                    <p>Track your total net worth and asset breakdown</p>
                 </div>
-                <div class="stat-card">
-                    <h3>Net Worth page - Ready to build!</h3>
-                    <p style="color: var(--text-secondary); margin-top: 12px;">This page will show your net worth history.</p>
+                <div class="stats-grid">
+                    <div class="stat-card" style="border-left: 3px solid var(--accent-green);">
+                        <div class="stat-label">Net Worth</div>
+                        <div class="stat-value" id="nw-page-networth">$0</div>
+                    </div>
+                    <div class="stat-card" style="border-left: 3px solid var(--accent-blue);">
+                        <div class="stat-label">Total Assets</div>
+                        <div class="stat-value" id="nw-page-assets">$0</div>
+                    </div>
+                    <div class="stat-card" style="border-left: 3px solid var(--accent-orange);">
+                        <div class="stat-label">Total Liabilities</div>
+                        <div class="stat-value" id="nw-page-liabilities">$0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Investment Value</div>
+                        <div class="stat-value" id="nw-page-investments">$0</div>
+                    </div>
+                </div>
+                <div class="stat-card" style="margin-bottom: 24px;">
+                    <h3 style="margin-bottom: 16px;">Assets vs Liabilities</h3>
+                    <canvas id="networth-bar-chart" style="max-height: 300px;"></canvas>
+                    <div id="nw-chart-empty" style="text-align: center; padding: 24px; color: var(--text-muted); display: none;">Connect accounts to see your asset breakdown</div>
+                </div>
+                <div class="stats-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="stat-card">
+                        <h3 style="margin-bottom: 16px; color: var(--accent-green);">Assets</h3>
+                        <div id="nw-assets-list">
+                            <p style="color: var(--text-muted); padding: 16px; text-align: center;">No asset accounts found</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <h3 style="margin-bottom: 16px; color: var(--accent-orange);">Liabilities</h3>
+                        <div id="nw-liabilities-list">
+                            <p style="color: var(--text-muted); padding: 16px; text-align: center;">No liability accounts found</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -645,11 +718,70 @@
             <div id="goals" class="page">
                 <div class="page-header">
                     <h1>Financial Goals</h1>
-                    <p>Set and track your goals</p>
+                    <p>Set targets and track your progress</p>
                 </div>
-                <div class="stat-card">
-                    <h3>Goals page - Ready to build!</h3>
-                    <p style="color: var(--text-secondary); margin-top: 12px;">This page will show your financial goals.</p>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Active Goals</div>
+                        <div class="stat-value" id="goals-active-count">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Completed</div>
+                        <div class="stat-value" id="goals-completed-count">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Target</div>
+                        <div class="stat-value" id="goals-total-target">$0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Saved</div>
+                        <div class="stat-value" id="goals-total-saved">$0</div>
+                    </div>
+                </div>
+
+                <!-- Add Goal Form -->
+                <div class="stat-card" style="margin-bottom: 24px;">
+                    <h3 style="margin-bottom: 16px;">Add New Goal</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div>
+                            <label class="form-label">Goal Name</label>
+                            <input type="text" class="form-input" id="goal-name" placeholder="e.g. Emergency Fund">
+                        </div>
+                        <div>
+                            <label class="form-label">Category</label>
+                            <select class="form-input" id="goal-category">
+                                <option value="savings">Savings</option>
+                                <option value="debt">Debt Payoff</option>
+                                <option value="investment">Investment</option>
+                                <option value="purchase">Major Purchase</option>
+                                <option value="retirement">Retirement</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Target Amount ($)</label>
+                            <input type="number" class="form-input" id="goal-target" placeholder="10000" min="0" step="100">
+                        </div>
+                        <div>
+                            <label class="form-label">Current Amount ($)</label>
+                            <input type="number" class="form-input" id="goal-current" placeholder="0" min="0" step="100">
+                        </div>
+                        <div>
+                            <label class="form-label">Target Date (optional)</label>
+                            <input type="date" class="form-input" id="goal-deadline">
+                        </div>
+                        <div style="display: flex; align-items: flex-end;">
+                            <button class="btn btn-primary" onclick="addGoal()" style="width: 100%;">+ Add Goal</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Goals List -->
+                <div id="goals-list-container">
+                    <div class="stat-card" style="text-align: center; padding: 40px;">
+                        <h3>No goals yet</h3>
+                        <p style="color: var(--text-secondary); margin-top: 8px;">Add your first financial goal above to start tracking progress.</p>
+                    </div>
                 </div>
             </div>
 
@@ -1244,6 +1376,7 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
             document.getElementById('settings-name').textContent = currentUser.name;
             document.getElementById('settings-email').textContent = currentUser.email;
             loadImportedData();
+            loadGoals();
             loadDashboardData();
             checkAdmin();
         }
@@ -1365,14 +1498,38 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
                 const networthData = await networthRes.json();
                 const txnData = await txnRes.json();
 
+                // Calculate net worth from accounts as primary source
+                const accounts = accountsData.accounts || [];
+                const liabilityTypes = ['credit', 'credit card', 'loan', 'mortgage'];
+                let calculatedAssets = 0;
+                let calculatedLiabilities = 0;
+
+                accounts.forEach(acct => {
+                    const balance = parseFloat(acct.current_balance) || 0;
+                    const acctType = (acct.type || acct.subtype || '').toLowerCase();
+                    if (liabilityTypes.some(t => acctType.includes(t))) {
+                        calculatedLiabilities += Math.abs(balance);
+                    } else {
+                        calculatedAssets += balance;
+                    }
+                });
+
+                // Also add investment portfolio value to assets
+                const portfolioValue = importedHoldings.reduce((sum, h) => sum + (h.currentValue || 0), 0);
+                calculatedAssets += portfolioValue;
+
+                // Use backend net worth if it returned real values, otherwise use our calculation
+                const totalAssets = (networthData.total_assets > 0) ? networthData.total_assets : calculatedAssets;
+                const totalLiabilities = (networthData.total_liabilities > 0) ? networthData.total_liabilities : calculatedLiabilities;
+                const netWorth = (networthData.net_worth !== 0 && networthData.net_worth != null) ? networthData.net_worth : (totalAssets - totalLiabilities);
+
                 // Update summary stats
-                document.getElementById('networth-value').textContent = formatCurrency(networthData.netWorth);
-                document.getElementById('assets-value').textContent = formatCurrency(networthData.totalAssets);
-                document.getElementById('liabilities-value').textContent = formatCurrency(networthData.totalLiabilities);
-                document.getElementById('accounts-count').textContent = accountsData.accounts?.length || 0;
+                document.getElementById('networth-value').textContent = formatCurrency(netWorth);
+                document.getElementById('assets-value').textContent = formatCurrency(totalAssets);
+                document.getElementById('liabilities-value').textContent = formatCurrency(totalLiabilities);
+                document.getElementById('accounts-count').textContent = accounts.length;
 
                 // Render account balances on dashboard
-                const accounts = accountsData.accounts || [];
                 const dashAccountsCard = document.getElementById('dashboard-accounts-card');
                 const dashAccountsList = document.getElementById('dashboard-accounts-list');
                 if (accounts.length > 0) {
@@ -1563,6 +1720,9 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
                     // Load page-specific data
                     if (page === 'accounts') loadAccountsPage();
                     if (page === 'transactions') loadTransactionsPage(1);
+                    if (page === 'portfolio') loadPortfolioPage();
+                    if (page === 'networth') loadNetWorthPage();
+                    if (page === 'goals') loadGoalsPage();
                     console.log('Navigated to:', page);
                 });
             });
@@ -1586,6 +1746,392 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
             }
 
         });
+
+// ==================== PORTFOLIO PAGE ====================
+
+function loadPortfolioPage() {
+    const holdings = importedHoldings || [];
+
+    // Update stats
+    const totalValue = holdings.reduce((sum, h) => sum + (h.currentValue || 0), 0);
+    const totalCost = holdings.reduce((sum, h) => sum + (h.totalCost || 0), 0);
+    const totalGL = totalValue - totalCost;
+
+    document.getElementById('portfolio-total-value').textContent = formatCurrency(totalValue);
+    document.getElementById('portfolio-total-cost').textContent = formatCurrency(totalCost);
+    document.getElementById('portfolio-holdings-count').textContent = holdings.length;
+
+    const glEl = document.getElementById('portfolio-total-gl');
+    glEl.textContent = (totalGL >= 0 ? '+' : '') + formatCurrency(totalGL);
+    glEl.style.color = totalGL >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)';
+
+    // Render table
+    const tbody = document.getElementById('portfolio-table-body');
+    if (holdings.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="padding: 24px; text-align: center; color: var(--text-muted);">No holdings yet. Import a portfolio CSV from the Import page to get started.</td></tr>';
+        document.getElementById('portfolio-chart-empty').style.display = 'block';
+        document.getElementById('portfolio-chart').style.display = 'none';
+        return;
+    }
+
+    document.getElementById('portfolio-chart-empty').style.display = 'none';
+    document.getElementById('portfolio-chart').style.display = 'block';
+
+    tbody.innerHTML = holdings.map(h => {
+        const gl = (h.currentValue || 0) - (h.totalCost || 0);
+        const glPct = h.totalCost > 0 ? ((gl / h.totalCost) * 100).toFixed(1) : '0.0';
+        return `
+            <tr style="border-bottom: 1px solid var(--border-color);">
+                <td style="padding: 10px 8px; font-weight: 600; font-family: 'JetBrains Mono', monospace;">${h.symbol}</td>
+                <td style="padding: 10px 8px;">${h.name}</td>
+                <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace;">${h.shares}</td>
+                <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace;">${formatCurrency(h.costBasis)}</td>
+                <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace;">${formatCurrency(h.currentPrice)}</td>
+                <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 600;">${formatCurrency(h.currentValue)}</td>
+                <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 600; color: ${gl >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)'};">
+                    ${gl >= 0 ? '+' : ''}${formatCurrency(gl)} (${glPct}%)
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // Create allocation chart
+    createPortfolioChart(holdings);
+}
+
+function createPortfolioChart(holdings) {
+    const canvas = document.getElementById('portfolio-chart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    if (window.portfolioChartInstance) {
+        window.portfolioChartInstance.destroy();
+    }
+
+    const sorted = [...holdings].sort((a, b) => (b.currentValue || 0) - (a.currentValue || 0)).slice(0, 10);
+    const colors = ['#2ea043', '#0969da', '#8957e5', '#f85149', '#ffc107', '#26843a', '#0550ae', '#6e40c9', '#da3633', '#bf8700'];
+
+    window.portfolioChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: sorted.map(h => h.symbol),
+            datasets: [{
+                data: sorted.map(h => h.currentValue || 0),
+                backgroundColor: colors
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { position: 'right', labels: { color: '#e6edf3' } }
+            }
+        }
+    });
+}
+
+// ==================== NET WORTH PAGE ====================
+
+async function loadNetWorthPage() {
+    try {
+        const res = await fetch(`${API_URL}/api/accounts`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        const accounts = data.accounts || [];
+
+        const liabilityTypes = ['credit', 'credit card', 'loan', 'mortgage'];
+        const assets = [];
+        const liabilities = [];
+
+        accounts.forEach(acct => {
+            const balance = parseFloat(acct.current_balance) || 0;
+            const acctType = (acct.type || acct.subtype || '').toLowerCase();
+            if (liabilityTypes.some(t => acctType.includes(t))) {
+                liabilities.push({ ...acct, balance: Math.abs(balance) });
+            } else {
+                assets.push({ ...acct, balance });
+            }
+        });
+
+        const portfolioValue = importedHoldings.reduce((sum, h) => sum + (h.currentValue || 0), 0);
+        const totalAssets = assets.reduce((sum, a) => sum + a.balance, 0) + portfolioValue;
+        const totalLiabilities = liabilities.reduce((sum, l) => sum + l.balance, 0);
+        const netWorth = totalAssets - totalLiabilities;
+
+        // Update stats
+        document.getElementById('nw-page-networth').textContent = formatCurrency(netWorth);
+        document.getElementById('nw-page-networth').style.color = netWorth >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)';
+        document.getElementById('nw-page-assets').textContent = formatCurrency(totalAssets);
+        document.getElementById('nw-page-liabilities').textContent = formatCurrency(totalLiabilities);
+        document.getElementById('nw-page-investments').textContent = formatCurrency(portfolioValue);
+
+        // Render assets list
+        const assetsList = document.getElementById('nw-assets-list');
+        const assetItems = assets.map(a => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                <div>
+                    <div style="font-weight: 500;">${a.name}</div>
+                    <div style="color: var(--text-muted); font-size: 12px;">${a.institution_name || 'Manual'} &middot; ${a.subtype || a.type || 'Account'}</div>
+                </div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--accent-green);">
+                    ${formatCurrency(a.balance)}
+                </div>
+            </div>
+        `);
+
+        if (portfolioValue > 0) {
+            assetItems.push(`
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                    <div>
+                        <div style="font-weight: 500;">Investment Portfolio</div>
+                        <div style="color: var(--text-muted); font-size: 12px;">${importedHoldings.length} holdings</div>
+                    </div>
+                    <div style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--accent-green);">
+                        ${formatCurrency(portfolioValue)}
+                    </div>
+                </div>
+            `);
+        }
+
+        if (assetItems.length > 0) {
+            assetsList.innerHTML = assetItems.join('') + `
+                <div style="display: flex; justify-content: space-between; padding: 12px 0; font-weight: 700;">
+                    <span>Total Assets</span>
+                    <span style="font-family: 'JetBrains Mono', monospace; color: var(--accent-green);">${formatCurrency(totalAssets)}</span>
+                </div>`;
+        } else {
+            assetsList.innerHTML = '<p style="color: var(--text-muted); padding: 16px; text-align: center;">No asset accounts found</p>';
+        }
+
+        // Render liabilities list
+        const liabList = document.getElementById('nw-liabilities-list');
+        if (liabilities.length > 0) {
+            liabList.innerHTML = liabilities.map(l => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                    <div>
+                        <div style="font-weight: 500;">${l.name}</div>
+                        <div style="color: var(--text-muted); font-size: 12px;">${l.institution_name || 'Manual'} &middot; ${l.subtype || l.type || 'Account'}</div>
+                    </div>
+                    <div style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--accent-orange);">
+                        -${formatCurrency(l.balance)}
+                    </div>
+                </div>
+            `).join('') + `
+                <div style="display: flex; justify-content: space-between; padding: 12px 0; font-weight: 700;">
+                    <span>Total Liabilities</span>
+                    <span style="font-family: 'JetBrains Mono', monospace; color: var(--accent-orange);">-${formatCurrency(totalLiabilities)}</span>
+                </div>`;
+        } else {
+            liabList.innerHTML = '<p style="color: var(--text-muted); padding: 16px; text-align: center;">No liabilities found</p>';
+        }
+
+        // Create bar chart
+        createNetWorthChart(assets, liabilities, portfolioValue);
+    } catch (error) {
+        console.error('Error loading net worth page:', error);
+    }
+}
+
+function createNetWorthChart(assets, liabilities, portfolioValue) {
+    const canvas = document.getElementById('networth-bar-chart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    if (window.networthChartInstance) {
+        window.networthChartInstance.destroy();
+    }
+
+    // Group by account type
+    const assetGroups = {};
+    assets.forEach(a => {
+        const type = a.subtype || a.type || 'Other';
+        assetGroups[type] = (assetGroups[type] || 0) + a.balance;
+    });
+    if (portfolioValue > 0) assetGroups['Investments'] = portfolioValue;
+
+    const liabGroups = {};
+    liabilities.forEach(l => {
+        const type = l.subtype || l.type || 'Other';
+        liabGroups[type] = (liabGroups[type] || 0) + l.balance;
+    });
+
+    const allLabels = [...Object.keys(assetGroups), ...Object.keys(liabGroups)];
+    if (allLabels.length === 0) {
+        canvas.style.display = 'none';
+        document.getElementById('nw-chart-empty').style.display = 'block';
+        return;
+    }
+
+    canvas.style.display = 'block';
+    document.getElementById('nw-chart-empty').style.display = 'none';
+
+    const labels = [...new Set(allLabels)];
+    const assetData = labels.map(l => assetGroups[l] || 0);
+    const liabData = labels.map(l => -(liabGroups[l] || 0));
+
+    window.networthChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Assets', data: assetData, backgroundColor: '#2ea043' },
+                { label: 'Liabilities', data: liabData, backgroundColor: '#f85149' }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                x: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
+                y: {
+                    ticks: { color: '#8b949e', callback: v => formatCurrency(Math.abs(v)) },
+                    grid: { color: '#30363d' }
+                }
+            },
+            plugins: {
+                legend: { labels: { color: '#e6edf3' } }
+            }
+        }
+    });
+}
+
+// ==================== GOALS PAGE ====================
+
+let financialGoals = [];
+
+function loadGoals() {
+    const saved = localStorage.getItem(`personal-cfo-goals-${currentUser?.id || 'guest'}`);
+    if (saved) financialGoals = JSON.parse(saved);
+}
+
+function saveGoals() {
+    localStorage.setItem(`personal-cfo-goals-${currentUser?.id || 'guest'}`, JSON.stringify(financialGoals));
+}
+
+function addGoal() {
+    const name = document.getElementById('goal-name').value.trim();
+    const category = document.getElementById('goal-category').value;
+    const target = parseFloat(document.getElementById('goal-target').value);
+    const current = parseFloat(document.getElementById('goal-current').value) || 0;
+    const deadline = document.getElementById('goal-deadline').value;
+
+    if (!name || !target || target <= 0) {
+        alert('Please enter a goal name and target amount.');
+        return;
+    }
+
+    financialGoals.push({
+        id: Date.now(),
+        name,
+        category,
+        target,
+        current,
+        deadline: deadline || null,
+        createdAt: new Date().toISOString()
+    });
+
+    saveGoals();
+
+    // Clear form
+    document.getElementById('goal-name').value = '';
+    document.getElementById('goal-target').value = '';
+    document.getElementById('goal-current').value = '';
+    document.getElementById('goal-deadline').value = '';
+
+    loadGoalsPage();
+}
+
+function updateGoalAmount(goalId) {
+    const goal = financialGoals.find(g => g.id === goalId);
+    if (!goal) return;
+
+    const newAmount = prompt(`Update current amount for "${goal.name}":`, goal.current);
+    if (newAmount === null) return;
+
+    const parsed = parseFloat(newAmount);
+    if (isNaN(parsed) || parsed < 0) {
+        alert('Please enter a valid amount.');
+        return;
+    }
+
+    goal.current = parsed;
+    saveGoals();
+    loadGoalsPage();
+}
+
+function deleteGoal(goalId) {
+    if (!confirm('Delete this goal?')) return;
+    financialGoals = financialGoals.filter(g => g.id !== goalId);
+    saveGoals();
+    loadGoalsPage();
+}
+
+function loadGoalsPage() {
+    loadGoals();
+
+    const active = financialGoals.filter(g => g.current < g.target);
+    const completed = financialGoals.filter(g => g.current >= g.target);
+
+    document.getElementById('goals-active-count').textContent = active.length;
+    document.getElementById('goals-completed-count').textContent = completed.length;
+    document.getElementById('goals-total-target').textContent = formatCurrency(financialGoals.reduce((s, g) => s + g.target, 0));
+    document.getElementById('goals-total-saved').textContent = formatCurrency(financialGoals.reduce((s, g) => s + g.current, 0));
+
+    const container = document.getElementById('goals-list-container');
+
+    if (financialGoals.length === 0) {
+        container.innerHTML = `
+            <div class="stat-card" style="text-align: center; padding: 40px;">
+                <h3>No goals yet</h3>
+                <p style="color: var(--text-secondary); margin-top: 8px;">Add your first financial goal above to start tracking progress.</p>
+            </div>`;
+        return;
+    }
+
+    const categoryIcons = { savings: '💰', debt: '💳', investment: '📈', purchase: '🛒', retirement: '🏖️', other: '🎯' };
+
+    container.innerHTML = financialGoals.map(g => {
+        const pct = Math.min((g.current / g.target) * 100, 100).toFixed(1);
+        const isComplete = g.current >= g.target;
+        const remaining = Math.max(g.target - g.current, 0);
+        const icon = categoryIcons[g.category] || '🎯';
+
+        let deadlineText = '';
+        if (g.deadline) {
+            const dl = new Date(g.deadline);
+            const now = new Date();
+            const daysLeft = Math.ceil((dl - now) / (1000 * 60 * 60 * 24));
+            deadlineText = daysLeft > 0 ? `${daysLeft} days left` : (isComplete ? 'Completed!' : 'Overdue');
+        }
+
+        return `
+            <div class="stat-card" style="margin-bottom: 16px; ${isComplete ? 'border-left: 3px solid var(--accent-green);' : ''}">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                    <div>
+                        <h3>${icon} ${g.name}</h3>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">
+                            ${g.category.charAt(0).toUpperCase() + g.category.slice(1)}
+                            ${deadlineText ? ' &middot; ' + deadlineText : ''}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="updateGoalAmount(${g.id})" class="btn" style="width: auto; padding: 6px 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); font-size: 12px;">Update</button>
+                        <button onclick="deleteGoal(${g.id})" class="btn" style="width: auto; padding: 6px 12px; background: var(--bg-tertiary); border: 1px solid var(--accent-orange); color: var(--accent-orange); font-size: 12px;">Delete</button>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+                    <span style="color: var(--text-secondary);">${formatCurrency(g.current)} of ${formatCurrency(g.target)}</span>
+                    <span style="font-weight: 600; color: ${isComplete ? 'var(--accent-green)' : 'var(--text-primary)'};">${pct}%</span>
+                </div>
+                <div style="background: var(--bg-tertiary); border-radius: 8px; height: 12px; overflow: hidden;">
+                    <div style="background: ${isComplete ? 'var(--accent-green)' : 'linear-gradient(90deg, var(--accent-blue), var(--accent-green))'}; height: 100%; width: ${pct}%; border-radius: 8px; transition: width 0.3s;"></div>
+                </div>
+                ${!isComplete ? `<div style="color: var(--text-muted); font-size: 13px; margin-top: 8px;">${formatCurrency(remaining)} remaining</div>` : '<div style="color: var(--accent-green); font-size: 13px; margin-top: 8px; font-weight: 600;">Goal reached!</div>'}
+            </div>
+        `;
+    }).join('');
+}
 
 // ==================== ADMIN APPROVAL FUNCTIONS ====================
 
