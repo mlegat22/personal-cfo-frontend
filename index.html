@@ -1402,8 +1402,8 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
                                 <div style="font-weight: 500;">${txn.name || txn.description || 'Transaction'}</div>
                                 <div style="color: var(--text-muted); font-size: 12px;">${new Date(txn.date).toLocaleDateString()} &middot; ${txn.category || 'Uncategorized'}</div>
                             </div>
-                            <div style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: ${txn.amount < 0 ? 'var(--accent-orange)' : 'var(--accent-green)'};">
-                                ${txn.amount < 0 ? '-' : '+'}${formatCurrency(Math.abs(txn.amount))}
+                            <div style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: ${-txn.amount >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)'};">
+                                ${-txn.amount >= 0 ? '+' : '-'}${formatCurrency(Math.abs(txn.amount))}
                             </div>
                         </div>
                     `).join('');
@@ -1491,8 +1491,8 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
 
                 let spending = 0, income = 0;
                 transactions.forEach(t => {
-                    if (t.amount < 0) spending += Math.abs(t.amount);
-                    else income += t.amount;
+                    if (t.amount > 0) spending += t.amount;
+                    else income += Math.abs(t.amount);
                 });
                 document.getElementById('txn-total-spending').textContent = formatCurrency(spending);
                 document.getElementById('txn-total-income').textContent = formatCurrency(income);
@@ -1508,8 +1508,8 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
                             <td style="padding: 10px 8px;">${txn.name || txn.description || '—'}</td>
                             <td style="padding: 10px 8px; color: var(--text-secondary);">${txn.category || '—'}</td>
                             <td style="padding: 10px 8px; color: var(--text-muted); font-size: 13px;">${txn.account_name || '—'}</td>
-                            <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 600; color: ${txn.amount < 0 ? 'var(--accent-orange)' : 'var(--accent-green)'};">
-                                ${txn.amount < 0 ? '-' : '+'}${formatCurrency(Math.abs(txn.amount))}
+                            <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 600; color: ${-txn.amount >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)'};">
+                                ${-txn.amount >= 0 ? '+' : '-'}${formatCurrency(Math.abs(txn.amount))}
                             </td>
                         </tr>
                     `).join('');
