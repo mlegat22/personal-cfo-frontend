@@ -542,6 +542,18 @@
                         <div class="stat-value" id="accounts-count">0</div>
                     </div>
                 </div>
+
+                <!-- Account Balances List -->
+                <div class="stat-card" id="dashboard-accounts-card" style="display: none;">
+                    <h3 style="margin-bottom: 16px;">Account Balances</h3>
+                    <div id="dashboard-accounts-list"></div>
+                </div>
+
+                <!-- Recent Transactions on Dashboard -->
+                <div class="stat-card" id="dashboard-transactions-card" style="display: none;">
+                    <h3 style="margin-bottom: 16px;">Recent Transactions</h3>
+                    <div id="dashboard-transactions-list"></div>
+                </div>
             </div>
 
             <!-- Accounts Page -->
@@ -550,10 +562,18 @@
                     <h1>Accounts</h1>
                     <p>Manage all your financial accounts</p>
                 </div>
-                <div class="stat-card">
-                    <h3>Accounts page - Ready to build!</h3>
-                    <p style="color: var(--text-secondary); margin-top: 12px;">This page will show all your connected and manual accounts.</p>
+                <button class="btn btn-primary" onclick="connectPlaid()" style="margin-bottom: 24px; max-width: 250px;">+ Connect Bank Account</button>
+                <div class="stats-grid" id="accounts-summary-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Accounts</div>
+                        <div class="stat-value" id="accounts-total-count">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Balance</div>
+                        <div class="stat-value" id="accounts-total-balance">$0</div>
+                    </div>
                 </div>
+                <div id="accounts-list-container"></div>
             </div>
 
             <!-- Transactions Page -->
@@ -562,9 +582,38 @@
                     <h1>Transactions</h1>
                     <p>View all your financial transactions</p>
                 </div>
+                <div class="stats-grid" style="margin-bottom: 24px;">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Transactions</div>
+                        <div class="stat-value" id="txn-total-count">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Spending</div>
+                        <div class="stat-value" id="txn-total-spending">$0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Income</div>
+                        <div class="stat-value" id="txn-total-income">$0</div>
+                    </div>
+                </div>
                 <div class="stat-card">
-                    <h3>Transactions page - Ready to build!</h3>
-                    <p style="color: var(--text-secondary); margin-top: 12px;">This page will show all your transactions.</p>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <th style="text-align: left; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Date</th>
+                                    <th style="text-align: left; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Description</th>
+                                    <th style="text-align: left; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Category</th>
+                                    <th style="text-align: left; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Account</th>
+                                    <th style="text-align: right; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactions-table-body">
+                                <tr><td colspan="5" style="padding: 24px; text-align: center; color: var(--text-muted);">Loading transactions...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="transactions-pagination" style="display: flex; justify-content: center; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);"></div>
                 </div>
             </div>
 
@@ -1299,25 +1348,186 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
 
         async function loadDashboardData() {
             try {
-                // Load accounts
-                const accountsRes = await fetch(`${API_URL}/api/accounts`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                const accountsData = await accountsRes.json();
-                
-                // Load net worth
-                const networthRes = await fetch(`${API_URL}/api/networth`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                const networthData = await networthRes.json();
+                // Load accounts, net worth, and recent transactions in parallel
+                const [accountsRes, networthRes, txnRes] = await Promise.all([
+                    fetch(`${API_URL}/api/accounts`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    }),
+                    fetch(`${API_URL}/api/networth`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    }),
+                    fetch(`${API_URL}/api/transactions?limit=10`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    })
+                ]);
 
-                // Update UI
+                const accountsData = await accountsRes.json();
+                const networthData = await networthRes.json();
+                const txnData = await txnRes.json();
+
+                // Update summary stats
                 document.getElementById('networth-value').textContent = formatCurrency(networthData.netWorth);
                 document.getElementById('assets-value').textContent = formatCurrency(networthData.totalAssets);
                 document.getElementById('liabilities-value').textContent = formatCurrency(networthData.totalLiabilities);
                 document.getElementById('accounts-count').textContent = accountsData.accounts?.length || 0;
+
+                // Render account balances on dashboard
+                const accounts = accountsData.accounts || [];
+                const dashAccountsCard = document.getElementById('dashboard-accounts-card');
+                const dashAccountsList = document.getElementById('dashboard-accounts-list');
+                if (accounts.length > 0) {
+                    dashAccountsCard.style.display = 'block';
+                    dashAccountsList.innerHTML = accounts.map(acct => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-color);">
+                            <div>
+                                <div style="font-weight: 600;">${acct.name}</div>
+                                <div style="color: var(--text-muted); font-size: 12px;">${acct.institution_name || 'Manual'} &middot; ${acct.subtype || acct.type || 'Account'}</div>
+                            </div>
+                            <div style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: ${acct.current_balance >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)'};">
+                                ${formatCurrency(acct.current_balance || 0)}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                // Render recent transactions on dashboard
+                const transactions = txnData.transactions || [];
+                const dashTxnCard = document.getElementById('dashboard-transactions-card');
+                const dashTxnList = document.getElementById('dashboard-transactions-list');
+                if (transactions.length > 0) {
+                    dashTxnCard.style.display = 'block';
+                    dashTxnList.innerHTML = transactions.map(txn => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                            <div>
+                                <div style="font-weight: 500;">${txn.name || txn.description || 'Transaction'}</div>
+                                <div style="color: var(--text-muted); font-size: 12px;">${new Date(txn.date).toLocaleDateString()} &middot; ${txn.category || 'Uncategorized'}</div>
+                            </div>
+                            <div style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: ${txn.amount < 0 ? 'var(--accent-orange)' : 'var(--accent-green)'};">
+                                ${txn.amount < 0 ? '-' : '+'}${formatCurrency(Math.abs(txn.amount))}
+                            </div>
+                        </div>
+                    `).join('');
+                }
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // ==================== ACCOUNTS PAGE ====================
+
+        async function loadAccountsPage() {
+            try {
+                const res = await fetch(`${API_URL}/api/accounts`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await res.json();
+                const accounts = data.accounts || [];
+
+                document.getElementById('accounts-total-count').textContent = accounts.length;
+                const totalBalance = accounts.reduce((sum, a) => sum + (parseFloat(a.current_balance) || 0), 0);
+                document.getElementById('accounts-total-balance').textContent = formatCurrency(totalBalance);
+
+                const container = document.getElementById('accounts-list-container');
+                if (accounts.length === 0) {
+                    container.innerHTML = `
+                        <div class="stat-card" style="text-align: center; padding: 40px;">
+                            <h3>No accounts connected yet</h3>
+                            <p style="color: var(--text-secondary); margin-top: 8px;">Click "Connect Bank Account" above to get started.</p>
+                        </div>`;
+                    return;
+                }
+
+                // Group accounts by institution
+                const grouped = {};
+                accounts.forEach(acct => {
+                    const inst = acct.institution_name || 'Manual Accounts';
+                    if (!grouped[inst]) grouped[inst] = [];
+                    grouped[inst].push(acct);
+                });
+
+                container.innerHTML = Object.entries(grouped).map(([institution, accts]) => `
+                    <div class="stat-card" style="margin-bottom: 16px;">
+                        <h3 style="margin-bottom: 16px; color: var(--accent-blue);">${institution}</h3>
+                        ${accts.map(acct => `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border-color);">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 15px;">${acct.name}</div>
+                                    <div style="color: var(--text-muted); font-size: 13px; margin-top: 2px;">
+                                        ${acct.subtype || acct.type || 'Account'}
+                                        ${acct.mask ? ' &middot; ****' + acct.mask : ''}
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 18px; color: ${parseFloat(acct.current_balance) >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)'};">
+                                        ${formatCurrency(acct.current_balance || 0)}
+                                    </div>
+                                    ${acct.available_balance != null ? `<div style="color: var(--text-muted); font-size: 12px;">Available: ${formatCurrency(acct.available_balance)}</div>` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading accounts page:', error);
+            }
+        }
+
+        // ==================== TRANSACTIONS PAGE ====================
+
+        let currentTxnPage = 1;
+
+        async function loadTransactionsPage(page = 1) {
+            currentTxnPage = page;
+            try {
+                const res = await fetch(`${API_URL}/api/transactions?page=${page}&limit=50`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await res.json();
+                const transactions = data.transactions || [];
+                const pagination = data.pagination || {};
+
+                // Update stats
+                document.getElementById('txn-total-count').textContent = pagination.total || transactions.length;
+
+                let spending = 0, income = 0;
+                transactions.forEach(t => {
+                    if (t.amount < 0) spending += Math.abs(t.amount);
+                    else income += t.amount;
+                });
+                document.getElementById('txn-total-spending').textContent = formatCurrency(spending);
+                document.getElementById('txn-total-income').textContent = formatCurrency(income);
+
+                // Render table
+                const tbody = document.getElementById('transactions-table-body');
+                if (transactions.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="padding: 24px; text-align: center; color: var(--text-muted);">No transactions found. Connect a bank account to see your transactions.</td></tr>';
+                } else {
+                    tbody.innerHTML = transactions.map(txn => `
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 10px 8px; white-space: nowrap;">${new Date(txn.date).toLocaleDateString()}</td>
+                            <td style="padding: 10px 8px;">${txn.name || txn.description || '—'}</td>
+                            <td style="padding: 10px 8px; color: var(--text-secondary);">${txn.category || '—'}</td>
+                            <td style="padding: 10px 8px; color: var(--text-muted); font-size: 13px;">${txn.account_name || '—'}</td>
+                            <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 600; color: ${txn.amount < 0 ? 'var(--accent-orange)' : 'var(--accent-green)'};">
+                                ${txn.amount < 0 ? '-' : '+'}${formatCurrency(Math.abs(txn.amount))}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Render pagination
+                const paginationDiv = document.getElementById('transactions-pagination');
+                if (pagination.total_pages > 1) {
+                    let buttons = '';
+                    if (page > 1) buttons += `<button class="btn" style="width: auto; background: var(--bg-tertiary); border: 1px solid var(--border-color);" onclick="loadTransactionsPage(${page - 1})">Previous</button>`;
+                    buttons += `<span style="padding: 12px; color: var(--text-secondary);">Page ${page} of ${pagination.total_pages}</span>`;
+                    if (pagination.has_more) buttons += `<button class="btn" style="width: auto; background: var(--bg-tertiary); border: 1px solid var(--border-color);" onclick="loadTransactionsPage(${page + 1})">Next</button>`;
+                    paginationDiv.innerHTML = buttons;
+                } else {
+                    paginationDiv.innerHTML = '';
+                }
+            } catch (error) {
+                console.error('Error loading transactions:', error);
             }
         }
 
@@ -1350,6 +1560,9 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
                         selectedPage.classList.add('active');
                     }
                     
+                    // Load page-specific data
+                    if (page === 'accounts') loadAccountsPage();
+                    if (page === 'transactions') loadTransactionsPage(1);
                     console.log('Navigated to:', page);
                 });
             });
