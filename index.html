@@ -1201,6 +1201,46 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
 
         // ==================== PLAID INTEGRATION ====================
 
+                async function handleOAuthReturn() {
+            showDashboard();
+            try {
+                const response = await fetch(`${API_URL}/api/plaid/create-link-token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.link_token) {
+                    console.error('Failed to create link token for OAuth return:', data);
+                    alert('Error completing bank connection. Please try connecting again.');
+                    return;
+                }
+
+                const handler = Plaid.create({
+                    token: data.link_token,
+                    receivedRedirectUri: window.location.href,
+                    onSuccess: async (public_token) => {
+                        await exchangePublicToken(public_token);
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    },
+                    onExit: () => {
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                });
+
+                handler.open();
+            } catch (error) {
+                console.error('Error handling OAuth return:', error);
+                alert('Error completing bank connection. Please try again.');
+            }
+        }
+
+        
+
         async function connectPlaid() {
             try {
                 const response = await fetch(`${API_URL}/api/plaid/create-link-token`, {
@@ -1321,8 +1361,17 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
             if (savedToken && savedUser) {
                 authToken = savedToken;
                 currentUser = JSON.parse(savedUser);
-                showDashboard();
+
+                const params = new URLSearchParams(window.location.search);
+                const oauthStateId = params.get('oauth_state_id');
+
+                if (oauthStateId) {
+                    handleOAuthReturn();
+                } else {
+                    showDashboard();
+                }
             }
+
         });
 
 // ==================== ADMIN APPROVAL FUNCTIONS ====================
