@@ -398,6 +398,132 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* IBKR Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 520px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-box h2 {
+            margin-bottom: 8px;
+            font-size: 22px;
+        }
+
+        .modal-box .modal-subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .modal-box .helper-text {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--text-secondary);
+        }
+
+        /* IBKR Status Card */
+        .ibkr-status-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-left: 3px solid #8957e5;
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+        }
+
+        .ibkr-status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .ibkr-status-header h3 {
+            font-size: 16px;
+        }
+
+        .ibkr-status-details {
+            display: flex;
+            gap: 24px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .ibkr-status-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .ibkr-status-badge.connected {
+            background: rgba(46, 160, 67, 0.15);
+            color: var(--accent-green);
+        }
+
+        .ibkr-status-badge.disconnected {
+            background: rgba(248, 81, 73, 0.15);
+            color: var(--accent-orange);
+        }
+
+        .loading-large {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border-color);
+            border-top-color: #8957e5;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
     </style>
 </head>
 <body>
@@ -565,10 +691,13 @@
                     <h1>Accounts</h1>
                     <p>Manage all your financial accounts</p>
                 </div>
-                <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+                <div style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
                     <button class="btn btn-primary" onclick="connectPlaid('banking')" style="max-width: 250px;">+ Connect Bank Account</button>
                     <button class="btn btn-primary" onclick="connectPlaid('investments')" style="max-width: 250px; background: var(--accent-blue);">+ Connect Brokerage</button>
+                    <button class="btn btn-primary" onclick="showIBKRModal()" style="max-width: 280px; background: #8957e5;">+ Connect Interactive Brokers</button>
                 </div>
+                <!-- IBKR Status Section (shown when connected) -->
+                <div id="ibkr-status-section" style="display: none;"></div>
                 <div class="stats-grid" id="accounts-summary-grid">
                     <div class="stat-card">
                         <div class="stat-label">Total Accounts</div>
@@ -932,6 +1061,41 @@
                     </div>
                 </div>
             </div>
+    <!-- IBKR Connection Modal -->
+    <div id="ibkr-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box">
+            <h2>Connect Interactive Brokers</h2>
+            <p class="modal-subtitle">Link your IBKR account directly via Flex Query API</p>
+
+            <div id="ibkr-modal-error" class="error-message hidden" style="margin-bottom: 16px;"></div>
+            <div id="ibkr-modal-success" class="success-message hidden" style="margin-bottom: 16px;"></div>
+
+            <div class="helper-text">
+                <strong>How to get your credentials:</strong><br>
+                Log into IBKR Account Management &rarr; Reports/Tax Reports &rarr; Flex Queries &rarr; Create a new Activity Flex Query that includes Trades and Open Positions &rarr; After saving, click the arrow icon to get your Query ID &rarr; Then go to Account Settings &rarr; API &rarr; Flex Web Service and generate a token.
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Flex Query Token</label>
+                <input type="text" class="form-input" id="ibkr-token" placeholder="24-character alphanumeric token" maxlength="24" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Query ID</label>
+                <input type="text" class="form-input" id="ibkr-query-id" placeholder="Numeric Query ID" required>
+            </div>
+
+            <div id="ibkr-import-status" style="display: none; text-align: center; padding: 16px; color: var(--text-secondary);">
+                <span class="loading-large"></span>
+                <span id="ibkr-import-status-text">Importing data from IBKR... This may take up to 30 seconds.</span>
+            </div>
+
+            <div class="modal-actions" id="ibkr-modal-buttons">
+                <button class="btn btn-secondary" onclick="hideIBKRModal()">Cancel</button>
+                <button class="btn btn-primary" id="ibkr-connect-btn" onclick="connectIBKR()" style="background: #8957e5;">Connect &amp; Import</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_URL = 'https://personal-cfo-backend-production-dc3d.up.railway.app';
         let authToken = null;
@@ -1497,6 +1661,317 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
             }
         }
 
+        // ==================== IBKR INTEGRATION ====================
+
+        function showIBKRModal() {
+            document.getElementById('ibkr-modal').style.display = 'flex';
+            document.getElementById('ibkr-token').value = '';
+            document.getElementById('ibkr-query-id').value = '';
+            document.getElementById('ibkr-modal-error').classList.add('hidden');
+            document.getElementById('ibkr-modal-success').classList.add('hidden');
+            document.getElementById('ibkr-import-status').style.display = 'none';
+            document.getElementById('ibkr-modal-buttons').style.display = 'flex';
+            document.getElementById('ibkr-connect-btn').disabled = false;
+            document.getElementById('ibkr-connect-btn').textContent = 'Connect & Import';
+        }
+
+        function hideIBKRModal() {
+            document.getElementById('ibkr-modal').style.display = 'none';
+        }
+
+        function showIBKRError(msg) {
+            const el = document.getElementById('ibkr-modal-error');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+            document.getElementById('ibkr-modal-success').classList.add('hidden');
+        }
+
+        function showIBKRSuccess(msg) {
+            const el = document.getElementById('ibkr-modal-success');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+            document.getElementById('ibkr-modal-error').classList.add('hidden');
+        }
+
+        async function connectIBKR() {
+            const flexToken = document.getElementById('ibkr-token').value.trim();
+            const queryId = document.getElementById('ibkr-query-id').value.trim();
+
+            // Validate inputs
+            if (!flexToken || !queryId) {
+                showIBKRError('Please enter both your Flex Query Token and Query ID.');
+                return;
+            }
+
+            if (!/^[a-zA-Z0-9]+$/.test(flexToken)) {
+                showIBKRError('Flex Query Token should be alphanumeric.');
+                return;
+            }
+
+            if (!/^\d+$/.test(queryId)) {
+                showIBKRError('Query ID should be numeric.');
+                return;
+            }
+
+            const btn = document.getElementById('ibkr-connect-btn');
+            btn.disabled = true;
+            btn.innerHTML = 'Saving credentials...<span class="loading"></span>';
+            document.getElementById('ibkr-modal-error').classList.add('hidden');
+
+            try {
+                // Step 1: Save credentials
+                const connectRes = await fetch(`${API_URL}/api/ibkr/connect`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ flexToken, queryId })
+                });
+
+                if (!connectRes.ok) {
+                    const errData = await connectRes.json().catch(() => ({}));
+                    showIBKRError(errData.error || 'Failed to save IBKR credentials.');
+                    btn.disabled = false;
+                    btn.textContent = 'Connect & Import';
+                    return;
+                }
+
+                // Step 2: Import data
+                btn.innerHTML = 'Importing data...<span class="loading"></span>';
+                document.getElementById('ibkr-import-status').style.display = 'block';
+                document.getElementById('ibkr-import-status-text').textContent = 'Importing data from IBKR... This may take up to 30 seconds.';
+
+                const importRes = await fetch(`${API_URL}/api/ibkr/import`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                document.getElementById('ibkr-import-status').style.display = 'none';
+
+                if (importRes.status === 202) {
+                    showIBKRError('IBKR is preparing your data. Please try again in 30 seconds.');
+                    btn.disabled = false;
+                    btn.textContent = 'Retry Import';
+                    btn.onclick = retryIBKRImport;
+                    return;
+                }
+
+                if (importRes.status === 400) {
+                    const errData = await importRes.json().catch(() => ({}));
+                    showIBKRError(errData.error || 'Validation error. Please check your credentials.');
+                    btn.disabled = false;
+                    btn.textContent = 'Connect & Import';
+                    return;
+                }
+
+                if (!importRes.ok) {
+                    showIBKRError('Server error importing data from IBKR. Please try again later.');
+                    btn.disabled = false;
+                    btn.textContent = 'Connect & Import';
+                    return;
+                }
+
+                const importData = await importRes.json();
+                const counts = [];
+                if (importData.accounts) counts.push(`${importData.accounts} account(s)`);
+                if (importData.holdings) counts.push(`${importData.holdings} holding(s)`);
+                if (importData.transactions) counts.push(`${importData.transactions} transaction(s)`);
+
+                showIBKRSuccess(`Successfully imported ${counts.join(', ')} from Interactive Brokers!`);
+                document.getElementById('ibkr-modal-buttons').style.display = 'none';
+
+                // Refresh accounts page after short delay
+                setTimeout(() => {
+                    hideIBKRModal();
+                    loadAccountsPage();
+                    loadDashboardData();
+                }, 2000);
+
+            } catch (error) {
+                console.error('IBKR connection error:', error);
+                showIBKRError('Network error connecting to IBKR. Please check your connection and try again.');
+                document.getElementById('ibkr-import-status').style.display = 'none';
+                btn.disabled = false;
+                btn.textContent = 'Connect & Import';
+            }
+        }
+
+        async function retryIBKRImport() {
+            const btn = document.getElementById('ibkr-connect-btn');
+            btn.disabled = true;
+            btn.innerHTML = 'Importing data...<span class="loading"></span>';
+            document.getElementById('ibkr-import-status').style.display = 'block';
+            document.getElementById('ibkr-import-status-text').textContent = 'Retrying import from IBKR...';
+            document.getElementById('ibkr-modal-error').classList.add('hidden');
+
+            try {
+                const importRes = await fetch(`${API_URL}/api/ibkr/import`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                document.getElementById('ibkr-import-status').style.display = 'none';
+
+                if (importRes.status === 202) {
+                    showIBKRError('IBKR is still preparing your data. Please try again in 30 seconds.');
+                    btn.disabled = false;
+                    btn.textContent = 'Retry Import';
+                    return;
+                }
+
+                if (!importRes.ok) {
+                    const errData = await importRes.json().catch(() => ({}));
+                    showIBKRError(errData.error || 'Error importing data from IBKR.');
+                    btn.disabled = false;
+                    btn.textContent = 'Retry Import';
+                    return;
+                }
+
+                const importData = await importRes.json();
+                const counts = [];
+                if (importData.accounts) counts.push(`${importData.accounts} account(s)`);
+                if (importData.holdings) counts.push(`${importData.holdings} holding(s)`);
+                if (importData.transactions) counts.push(`${importData.transactions} transaction(s)`);
+
+                showIBKRSuccess(`Successfully imported ${counts.join(', ')} from Interactive Brokers!`);
+                document.getElementById('ibkr-modal-buttons').style.display = 'none';
+
+                setTimeout(() => {
+                    hideIBKRModal();
+                    loadAccountsPage();
+                    loadDashboardData();
+                }, 2000);
+
+            } catch (error) {
+                console.error('IBKR retry import error:', error);
+                showIBKRError('Network error. Please try again.');
+                document.getElementById('ibkr-import-status').style.display = 'none';
+                btn.disabled = false;
+                btn.textContent = 'Retry Import';
+            }
+        }
+
+        async function loadIBKRStatus() {
+            try {
+                const res = await fetch(`${API_URL}/api/ibkr/status`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!res.ok) {
+                    document.getElementById('ibkr-status-section').style.display = 'none';
+                    return;
+                }
+
+                const data = await res.json();
+                const section = document.getElementById('ibkr-status-section');
+
+                if (data.connected) {
+                    const lastSync = data.lastSync ? new Date(data.lastSync).toLocaleString() : 'Never';
+                    section.style.display = 'block';
+                    section.innerHTML = `
+                        <div class="ibkr-status-card">
+                            <div class="ibkr-status-header">
+                                <div>
+                                    <h3>Interactive Brokers <span class="ibkr-status-badge connected">Connected</span></h3>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button class="btn" onclick="resyncIBKR(this)" style="width: auto; padding: 8px 16px; background: #8957e5; font-size: 13px;">Re-sync</button>
+                                    <button class="btn btn-secondary" onclick="disconnectIBKR()" style="width: auto; padding: 8px 16px; font-size: 13px; border-color: var(--accent-orange); color: var(--accent-orange);">Disconnect</button>
+                                </div>
+                            </div>
+                            <div class="ibkr-status-details">
+                                <span>Last synced: ${lastSync}</span>
+                                ${data.accounts ? `<span>${data.accounts} account(s)</span>` : ''}
+                                ${data.holdings ? `<span>${data.holdings} holding(s)</span>` : ''}
+                            </div>
+                        </div>`;
+                } else {
+                    section.style.display = 'none';
+                }
+            } catch (error) {
+                // Silently fail - IBKR status is optional
+                document.getElementById('ibkr-status-section').style.display = 'none';
+            }
+        }
+
+        async function resyncIBKR(btn) {
+            btn.disabled = true;
+            btn.innerHTML = 'Syncing...<span class="loading"></span>';
+
+            try {
+                const importRes = await fetch(`${API_URL}/api/ibkr/import`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (importRes.status === 202) {
+                    alert('IBKR is preparing your data. Please try again in 30 seconds.');
+                    btn.disabled = false;
+                    btn.textContent = 'Re-sync';
+                    return;
+                }
+
+                if (!importRes.ok) {
+                    alert('Error syncing IBKR data. Please try again.');
+                    btn.disabled = false;
+                    btn.textContent = 'Re-sync';
+                    return;
+                }
+
+                const importData = await importRes.json();
+                const counts = [];
+                if (importData.accounts) counts.push(`${importData.accounts} account(s)`);
+                if (importData.holdings) counts.push(`${importData.holdings} holding(s)`);
+                if (importData.transactions) counts.push(`${importData.transactions} transaction(s)`);
+
+                alert(`IBKR data synced! Imported ${counts.join(', ')}.`);
+                loadAccountsPage();
+                loadDashboardData();
+            } catch (error) {
+                console.error('IBKR resync error:', error);
+                alert('Network error syncing IBKR data.');
+                btn.disabled = false;
+                btn.textContent = 'Re-sync';
+            }
+        }
+
+        async function disconnectIBKR() {
+            if (!confirm('Disconnect Interactive Brokers? Your IBKR credentials will be removed.')) return;
+
+            try {
+                const res = await fetch(`${API_URL}/api/ibkr/disconnect`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (res.ok) {
+                    alert('Interactive Brokers disconnected.');
+                    document.getElementById('ibkr-status-section').style.display = 'none';
+                    loadAccountsPage();
+                    loadDashboardData();
+                } else {
+                    alert('Error disconnecting IBKR. Please try again.');
+                }
+            } catch (error) {
+                console.error('IBKR disconnect error:', error);
+                alert('Network error. Please try again.');
+            }
+        }
+
+        // Close IBKR modal when clicking outside
+        document.getElementById('ibkr-modal').addEventListener('click', function(e) {
+            if (e.target === this) hideIBKRModal();
+        });
+
         // ==================== DASHBOARD DATA ====================
 
         async function loadDashboardData() {
@@ -1593,6 +2068,9 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
         // ==================== ACCOUNTS PAGE ====================
 
         async function loadAccountsPage() {
+            // Load IBKR status in parallel with accounts
+            loadIBKRStatus();
+
             try {
                 const res = await fetch(`${API_URL}/api/accounts`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
