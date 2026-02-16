@@ -1519,9 +1519,9 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
                 calculatedAssets += portfolioValue;
 
                 // Use backend net worth if it returned real values, otherwise use our calculation
-                const totalAssets = (networthData.totalAssets > 0) ? networthData.totalAssets : calculatedAssets;
-                const totalLiabilities = (networthData.totalLiabilities > 0) ? networthData.totalLiabilities : calculatedLiabilities;
-                const netWorth = (networthData.netWorth !== 0 && networthData.netWorth != null) ? networthData.netWorth : (totalAssets - totalLiabilities);
+                const totalAssets = (networthData.total_assets > 0) ? networthData.total_assets : calculatedAssets;
+                const totalLiabilities = (networthData.total_liabilities > 0) ? networthData.total_liabilities : calculatedLiabilities;
+                const netWorth = (networthData.net_worth !== 0 && networthData.net_worth != null) ? networthData.net_worth : (totalAssets - totalLiabilities);
 
                 // Update summary stats
                 document.getElementById('networth-value').textContent = formatCurrency(netWorth);
