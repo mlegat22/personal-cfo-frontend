@@ -518,10 +518,13 @@
 
                 <div class="connection-banner">
                     <div class="banner-text">
-                        <h3>🏦 Connect Your Bank Accounts</h3>
-                        <p>Link your accounts securely with Plaid</p>
+                        <h3>🏦 Connect Your Accounts</h3>
+                        <p>Link your bank or brokerage accounts securely with Plaid</p>
                     </div>
-                    <button class="btn btn-primary" onclick="connectPlaid()">+ Connect Bank</button>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn btn-primary" onclick="connectPlaid('banking')">+ Connect Bank</button>
+                        <button class="btn btn-primary" onclick="connectPlaid('investments')" style="background: var(--accent-blue);">+ Connect Brokerage</button>
+                    </div>
                 </div>
 
                 <div class="stats-grid">
@@ -562,7 +565,10 @@
                     <h1>Accounts</h1>
                     <p>Manage all your financial accounts</p>
                 </div>
-                <button class="btn btn-primary" onclick="connectPlaid()" style="margin-bottom: 24px; max-width: 250px;">+ Connect Bank Account</button>
+                <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+                    <button class="btn btn-primary" onclick="connectPlaid('banking')" style="max-width: 250px;">+ Connect Bank Account</button>
+                    <button class="btn btn-primary" onclick="connectPlaid('investments')" style="max-width: 250px; background: var(--accent-blue);">+ Connect Brokerage</button>
+                </div>
                 <div class="stats-grid" id="accounts-summary-grid">
                     <div class="stat-card">
                         <div class="stat-label">Total Accounts</div>
@@ -1386,30 +1392,35 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
                 async function handleOAuthReturn() {
             showDashboard();
             try {
+                const type = localStorage.getItem('plaidLinkType') || 'banking';
                 const response = await fetch(`${API_URL}/api/plaid/create-link-token`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authToken}`
-                    }
+                    },
+                    body: JSON.stringify({ type })
                 });
 
                 const data = await response.json();
 
                 if (!response.ok || !data.link_token) {
                     console.error('Failed to create link token for OAuth return:', data);
-                    alert('Error completing bank connection. Please try connecting again.');
+                    alert('Error completing connection. Please try connecting again.');
                     return;
                 }
 
+                const label = type === 'investments' ? 'Investment accounts' : 'Bank accounts';
                 const handler = Plaid.create({
                     token: data.link_token,
                     receivedRedirectUri: window.location.href,
                     onSuccess: async (public_token) => {
-                        await exchangePublicToken(public_token);
+                        await exchangePublicToken(public_token, label);
+                        localStorage.removeItem('plaidLinkType');
                         window.history.replaceState({}, document.title, window.location.pathname);
                     },
                     onExit: () => {
+                        localStorage.removeItem('plaidLinkType');
                         window.history.replaceState({}, document.title, window.location.pathname);
                     }
                 });
@@ -1417,34 +1428,43 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
                 handler.open();
             } catch (error) {
                 console.error('Error handling OAuth return:', error);
-                alert('Error completing bank connection. Please try again.');
+                alert('Error completing connection. Please try again.');
             }
         }
 
         
 
-        async function connectPlaid() {
+        async function connectPlaid(type = 'banking') {
             try {
+                // Store type for OAuth return flow
+                localStorage.setItem('plaidLinkType', type);
+
                 const response = await fetch(`${API_URL}/api/plaid/create-link-token`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authToken}`
-                    }
+                    },
+                    body: JSON.stringify({ type })
                 });
 
                 const data = await response.json();
 
                 if (!response.ok || !data.link_token) {
                     console.error('Failed to create link token:', data);
-                    alert('Error creating bank connection. Please try again.');
+                    alert(`Error creating ${type === 'investments' ? 'brokerage' : 'bank'} connection. Please try again.`);
                     return;
                 }
 
+                const label = type === 'investments' ? 'Investment accounts' : 'Bank accounts';
                 const handler = Plaid.create({
                     token: data.link_token,
                     onSuccess: async (public_token) => {
-                        await exchangePublicToken(public_token);
+                        await exchangePublicToken(public_token, label);
+                        localStorage.removeItem('plaidLinkType');
+                    },
+                    onExit: () => {
+                        localStorage.removeItem('plaidLinkType');
                     }
                 });
 
@@ -1455,7 +1475,7 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
             }
         }
 
-        async function exchangePublicToken(publicToken) {
+        async function exchangePublicToken(publicToken, label = 'Bank accounts') {
             try {
                 const response = await fetch(`${API_URL}/api/plaid/exchange-public-token`, {
                     method: 'POST',
@@ -1469,7 +1489,7 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
                 const data = await response.json();
 
                 if (data.success) {
-                    alert('✅ Bank accounts connected successfully!');
+                    alert(`${label} connected successfully!`);
                     loadDashboardData();
                 }
             } catch (error) {
