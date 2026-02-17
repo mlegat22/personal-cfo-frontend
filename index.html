@@ -762,48 +762,23 @@
                 </div>
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-label">Portfolio Value</div>
-                        <div class="stat-value" id="portfolio-total-value">$0</div>
+                        <div class="stat-label">Total Value</div>
+                        <div class="stat-value" id="portfolio-total-value" style="font-family: 'JetBrains Mono', monospace;">$0</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Total Cost Basis</div>
-                        <div class="stat-value" id="portfolio-total-cost">$0</div>
+                        <div class="stat-label">Cost Basis</div>
+                        <div class="stat-value" id="portfolio-total-cost" style="font-family: 'JetBrains Mono', monospace;">$0</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Total Gain/Loss</div>
-                        <div class="stat-value" id="portfolio-total-gl">$0</div>
+                        <div class="stat-value" id="portfolio-total-gl" style="font-family: 'JetBrains Mono', monospace;">$0</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Holdings</div>
-                        <div class="stat-value" id="portfolio-holdings-count">0</div>
+                        <div class="stat-label">Return %</div>
+                        <div class="stat-value" id="portfolio-return-pct" style="font-family: 'JetBrains Mono', monospace;">0%</div>
                     </div>
                 </div>
-                <div class="stat-card" style="margin-bottom: 24px;">
-                    <h3 style="margin-bottom: 16px;">Portfolio Allocation</h3>
-                    <canvas id="portfolio-chart" style="max-height: 300px;"></canvas>
-                    <div id="portfolio-chart-empty" style="text-align: center; padding: 24px; color: var(--text-muted); display: none;">Import portfolio data to see allocation chart</div>
-                </div>
-                <div class="stat-card">
-                    <h3 style="margin-bottom: 16px;">Holdings</h3>
-                    <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                            <thead>
-                                <tr style="border-bottom: 1px solid var(--border-color);">
-                                    <th style="text-align: left; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Symbol</th>
-                                    <th style="text-align: left; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Name</th>
-                                    <th style="text-align: right; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Shares</th>
-                                    <th style="text-align: right; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Cost Basis</th>
-                                    <th style="text-align: right; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Price</th>
-                                    <th style="text-align: right; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Value</th>
-                                    <th style="text-align: right; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Gain/Loss</th>
-                                </tr>
-                            </thead>
-                            <tbody id="portfolio-table-body">
-                                <tr><td colspan="7" style="padding: 24px; text-align: center; color: var(--text-muted);">No holdings yet. Import a portfolio CSV to get started.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                <div id="portfolio-holdings-container"></div>
             </div>
 
             <!-- Net Worth Page -->
@@ -2336,85 +2311,89 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
 
 // ==================== PORTFOLIO PAGE ====================
 
-function loadPortfolioPage() {
-    const holdings = importedHoldings || [];
+async function loadPortfolioPage() {
+    try {
+        const res = await fetch(`${API_URL}/api/holdings`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        const holdings = data.holdings || [];
+        const summary = data.summary || {};
 
-    // Update stats
-    const totalValue = holdings.reduce((sum, h) => sum + (h.currentValue || 0), 0);
-    const totalCost = holdings.reduce((sum, h) => sum + (h.totalCost || 0), 0);
-    const totalGL = totalValue - totalCost;
+        // Update summary cards
+        document.getElementById('portfolio-total-value').textContent = formatCurrency(summary.total_value || 0);
+        document.getElementById('portfolio-total-cost').textContent = formatCurrency(summary.total_cost_basis || 0);
 
-    document.getElementById('portfolio-total-value').textContent = formatCurrency(totalValue);
-    document.getElementById('portfolio-total-cost').textContent = formatCurrency(totalCost);
-    document.getElementById('portfolio-holdings-count').textContent = holdings.length;
+        const gl = summary.total_gain_loss || 0;
+        const glEl = document.getElementById('portfolio-total-gl');
+        glEl.textContent = (gl >= 0 ? '+' : '') + formatCurrency(gl);
+        glEl.style.color = gl >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)';
 
-    const glEl = document.getElementById('portfolio-total-gl');
-    glEl.textContent = (totalGL >= 0 ? '+' : '') + formatCurrency(totalGL);
-    glEl.style.color = totalGL >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)';
+        const pct = summary.total_gain_loss_pct || 0;
+        const pctEl = document.getElementById('portfolio-return-pct');
+        pctEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+        pctEl.style.color = pct >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)';
 
-    // Render table
-    const tbody = document.getElementById('portfolio-table-body');
-    if (holdings.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="padding: 24px; text-align: center; color: var(--text-muted);">No holdings yet. Import a portfolio CSV from the Import page to get started.</td></tr>';
-        document.getElementById('portfolio-chart-empty').style.display = 'block';
-        document.getElementById('portfolio-chart').style.display = 'none';
-        return;
-    }
-
-    document.getElementById('portfolio-chart-empty').style.display = 'none';
-    document.getElementById('portfolio-chart').style.display = 'block';
-
-    tbody.innerHTML = holdings.map(h => {
-        const gl = (h.currentValue || 0) - (h.totalCost || 0);
-        const glPct = h.totalCost > 0 ? ((gl / h.totalCost) * 100).toFixed(1) : '0.0';
-        return `
-            <tr style="border-bottom: 1px solid var(--border-color);">
-                <td style="padding: 10px 8px; font-weight: 600; font-family: 'JetBrains Mono', monospace;">${h.symbol}</td>
-                <td style="padding: 10px 8px;">${h.name}</td>
-                <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace;">${h.shares}</td>
-                <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace;">${formatCurrency(h.costBasis)}</td>
-                <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace;">${formatCurrency(h.currentPrice)}</td>
-                <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 600;">${formatCurrency(h.currentValue)}</td>
-                <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 600; color: ${gl >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)'};">
-                    ${gl >= 0 ? '+' : ''}${formatCurrency(gl)} (${glPct}%)
-                </td>
-            </tr>
-        `;
-    }).join('');
-
-    // Create allocation chart
-    createPortfolioChart(holdings);
-}
-
-function createPortfolioChart(holdings) {
-    const canvas = document.getElementById('portfolio-chart');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-
-    if (window.portfolioChartInstance) {
-        window.portfolioChartInstance.destroy();
-    }
-
-    const sorted = [...holdings].sort((a, b) => (b.currentValue || 0) - (a.currentValue || 0)).slice(0, 10);
-    const colors = ['#2ea043', '#0969da', '#8957e5', '#f85149', '#ffc107', '#26843a', '#0550ae', '#6e40c9', '#da3633', '#bf8700'];
-
-    window.portfolioChartInstance = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: sorted.map(h => h.symbol),
-            datasets: [{
-                data: sorted.map(h => h.currentValue || 0),
-                backgroundColor: colors
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: { position: 'right', labels: { color: '#e6edf3' } }
-            }
+        // Render holdings table
+        const container = document.getElementById('portfolio-holdings-container');
+        if (holdings.length === 0) {
+            container.innerHTML = `
+                <div class="stat-card" style="text-align: center; padding: 40px;">
+                    <h3>No holdings yet</h3>
+                    <p style="color: var(--text-secondary); margin-top: 8px;">Connect a brokerage account to see your investment holdings.</p>
+                </div>`;
+            return;
         }
-    });
+
+        const totalValue = summary.total_value || holdings.reduce((sum, h) => sum + (parseFloat(h.current_price) * parseFloat(h.shares) || 0), 0);
+
+        container.innerHTML = `
+            <div class="stat-card">
+                <h3 style="margin-bottom: 16px;">Holdings</h3>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <th style="text-align: left; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Symbol</th>
+                                <th style="text-align: left; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Name</th>
+                                <th style="text-align: right; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Shares</th>
+                                <th style="text-align: right; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Price</th>
+                                <th style="text-align: right; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Value</th>
+                                <th style="text-align: right; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Cost Basis</th>
+                                <th style="text-align: right; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Gain/Loss</th>
+                                <th style="text-align: right; padding: 12px 8px; color: var(--text-secondary); font-weight: 600;">Allocation %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${holdings.map(h => {
+                                const shares = parseFloat(h.shares) || 0;
+                                const price = parseFloat(h.current_price) || 0;
+                                const cost = parseFloat(h.cost_basis) || 0;
+                                const value = shares * price;
+                                const holdingGL = value - cost;
+                                const isCash = h.symbol === 'CASH';
+                                const allocation = totalValue > 0 ? ((value / totalValue) * 100).toFixed(1) : '0.0';
+                                return `
+                                    <tr style="border-bottom: 1px solid var(--border-color);">
+                                        <td style="padding: 10px 8px; font-weight: 600; font-family: 'JetBrains Mono', monospace;">${h.symbol}</td>
+                                        <td style="padding: 10px 8px;">${h.name || ''}</td>
+                                        <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace;">${isCash ? '--' : shares.toFixed(4)}</td>
+                                        <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace;">${isCash ? '--' : formatCurrency(price)}</td>
+                                        <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 600;">${formatCurrency(value)}</td>
+                                        <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace;">${formatCurrency(cost)}</td>
+                                        <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 600; color: ${isCash ? 'var(--text-secondary)' : (holdingGL >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)')};">
+                                            ${isCash ? '--' : ((holdingGL >= 0 ? '+' : '') + formatCurrency(holdingGL))}
+                                        </td>
+                                        <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace;">${allocation}%</td>
+                                    </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>`;
+    } catch (error) {
+        console.error('Error loading portfolio page:', error);
+    }
 }
 
 // ==================== NET WORTH PAGE ====================
