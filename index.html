@@ -2372,7 +2372,7 @@ async function loadPortfolioPage() {
                                 const cost = parseFloat(h.cost_basis) || 0;
                                 const value = shares * price;
                                 const holdingGL = value - cost;
-                                const isCash = h.symbol === 'CASH';
+                                const isCash = h.symbol === 'CASH' || h.symbol.startsWith('CUR:');
                                 const allocation = totalValue > 0 ? ((value / totalValue) * 100).toFixed(1) : '0.0';
                                 return `
                                     <tr style="border-bottom: 1px solid var(--border-color);">
