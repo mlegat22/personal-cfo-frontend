@@ -712,7 +712,6 @@
                 <div style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
                     <button class="btn btn-primary" onclick="connectPlaid('banking')" style="max-width: 250px;">+ Connect Bank Account</button>
                     <button class="btn btn-primary" onclick="connectPlaid('investments')" style="max-width: 250px; background: var(--accent-blue);">+ Connect Brokerage</button>
-                    <button class="btn btn-primary" onclick="showIBKRModal()" style="max-width: 280px; background: #8957e5;">+ Connect Interactive Brokers</button>
                 </div>
                 <!-- IBKR Status Section (shown when connected) -->
                 <div id="ibkr-status-section" style="display: none;"></div>
@@ -1841,13 +1840,16 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
                 const institutions = data.institutions || [];
                 const section = document.getElementById('direct-connect-section');
 
-                if (institutions.length === 0) {
+                // Only show institutions that are not already connected
+                const disconnected = institutions.filter(inst => !inst.connected);
+
+                if (disconnected.length === 0) {
                     section.style.display = 'none';
                     return;
                 }
 
                 section.style.display = 'block';
-                section.innerHTML = institutions.map(inst => `
+                section.innerHTML = disconnected.map(inst => `
                     <div class="stat-card" style="margin-bottom: 16px; border-left: 3px solid #8957e5;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
