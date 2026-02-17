@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Work+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@15.0.0/marked.min.js"></script>
     
     <style>
         :root {
@@ -524,6 +525,23 @@
             vertical-align: middle;
             margin-right: 8px;
         }
+
+        /* AI Insight card styles */
+        .ai-insight-body { line-height: 1.8; color: var(--text-secondary); }
+        .ai-insight-body p { margin-bottom: 12px; }
+        .ai-insight-body ul, .ai-insight-body ol { margin: 0 0 12px 20px; }
+        .ai-insight-body li { margin-bottom: 4px; }
+        .ai-insight-body strong { color: var(--text-primary); }
+        .ai-insight-body h1, .ai-insight-body h2, .ai-insight-body h3, .ai-insight-body h4 { color: var(--text-primary); margin: 16px 0 8px; }
+        .ai-insight-body code { background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+        .ai-insight-body pre { background: var(--bg-tertiary); padding: 12px; border-radius: 8px; overflow-x: auto; margin-bottom: 12px; }
+        .ai-insight-body pre code { background: none; padding: 0; }
+
+        /* Ask AI chat */
+        .ask-ai-messages { max-height: 500px; overflow-y: auto; margin-bottom: 16px; }
+        .ask-ai-msg { padding: 12px 16px; border-radius: 10px; margin-bottom: 10px; max-width: 85%; }
+        .ask-ai-msg.user { background: var(--accent-blue); color: #fff; margin-left: auto; }
+        .ask-ai-msg.assistant { background: var(--bg-tertiary); }
     </style>
 </head>
 <body>
@@ -752,6 +770,15 @@
                     </div>
                     <div id="transactions-pagination" style="display: flex; justify-content: center; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);"></div>
                 </div>
+                <div class="stat-card" style="margin-top: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3>AI Spending Analysis</h3>
+                        <button class="btn btn-primary" onclick="loadSpendingInsight()" id="spending-insight-btn" style="width: auto; padding: 8px 16px; font-size: 13px;">Analyze Spending</button>
+                    </div>
+                    <div id="spending-insight-content" class="ai-insight-body" style="color: var(--text-muted);">
+                        Click "Analyze Spending" to get an AI-powered breakdown of your spending habits.
+                    </div>
+                </div>
             </div>
 
             <!-- Portfolio Page -->
@@ -779,6 +806,15 @@
                     </div>
                 </div>
                 <div id="portfolio-holdings-container"></div>
+                <div class="stat-card" style="margin-top: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3>AI Portfolio Analysis</h3>
+                        <button class="btn btn-primary" onclick="loadPortfolioInsight()" id="portfolio-insight-btn" style="width: auto; padding: 8px 16px; font-size: 13px;">Analyze Portfolio</button>
+                    </div>
+                    <div id="portfolio-insight-content" class="ai-insight-body" style="color: var(--text-muted);">
+                        Click "Analyze Portfolio" to get AI-powered analysis of your investment holdings.
+                    </div>
+                </div>
             </div>
 
             <!-- Net Worth Page -->
@@ -900,12 +936,21 @@
             <!-- Insights Page -->
             <div id="insights" class="page">
                 <div class="page-header">
-                    <h1>💡 Financial Insights</h1>
+                    <h1>Financial Insights</h1>
                     <p>AI-powered analysis of your financial health powered by Claude</p>
                 </div>
 
-                <button class="btn btn-primary" onclick="generateInsights()" id="insights-btn" style="margin-bottom: 24px;">
-                    ✨ Generate AI Insights
+                <div class="stat-card" style="margin-bottom: 24px;">
+                    <h3 style="margin-bottom: 16px;">Ask AI</h3>
+                    <div id="ask-ai-messages" class="ask-ai-messages"></div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" class="form-input" id="ask-ai-input" placeholder="Ask about your finances..." style="flex: 1;" onkeydown="if(event.key==='Enter')askAI()">
+                        <button class="btn btn-primary" onclick="askAI()" id="ask-ai-btn" style="width: auto; padding: 10px 20px;">Send</button>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="generateInsights()" id="insights-btn" style="margin-bottom: 24px; background: var(--bg-tertiary); border: 1px solid var(--border-color);">
+                    Refresh Local Stats
                 </button>
 
                 <div class="stats-grid">
@@ -927,15 +972,8 @@
                     </div>
                 </div>
 
-                <div class="stat-card" id="ai-insights-card">
-                    <h3 style="margin-bottom: 16px;">🤖 AI Analysis</h3>
-                    <div id="ai-insights-content" style="line-height: 1.8; color: var(--text-secondary);">
-                        Click "Generate AI Insights" to get personalized financial recommendations based on your data.
-                    </div>
-                </div>
-
                 <div class="stat-card">
-                    <h3 style="margin-bottom: 16px;">📊 Spending by Category</h3>
+                    <h3 style="margin-bottom: 16px;">Spending by Category</h3>
                     <canvas id="category-chart" style="max-height: 300px;"></canvas>
                 </div>
             </div>
@@ -1383,6 +1421,112 @@
                     }
                 }
             });
+        }
+
+        // ==================== AI BACKEND INSIGHTS ====================
+
+        function renderMarkdown(md) {
+            if (typeof marked !== 'undefined' && marked.parse) {
+                return marked.parse(md);
+            }
+            return md.replace(/\n/g, '<br>');
+        }
+
+        async function loadSpendingInsight() {
+            const btn = document.getElementById('spending-insight-btn');
+            const content = document.getElementById('spending-insight-content');
+            btn.disabled = true;
+            btn.innerHTML = 'Analyzing...<span class="loading"></span>';
+            content.innerHTML = '<span style="color: var(--text-muted);">Analyzing your spending patterns...</span>';
+            try {
+                const res = await fetch(`${API_URL}/api/insights/spending`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (res.status === 503) {
+                    content.innerHTML = '<span style="color: var(--text-muted);">AI insights are not configured on the server. Please set an Anthropic API key in the backend.</span>';
+                    return;
+                }
+                const data = await res.json();
+                content.innerHTML = renderMarkdown(data.insight || 'No insight returned.');
+            } catch (error) {
+                console.error('Error loading spending insight:', error);
+                content.innerHTML = '<span style="color: var(--accent-orange);">Failed to load spending analysis. Please try again.</span>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Analyze Spending';
+            }
+        }
+
+        async function loadPortfolioInsight() {
+            const btn = document.getElementById('portfolio-insight-btn');
+            const content = document.getElementById('portfolio-insight-content');
+            btn.disabled = true;
+            btn.innerHTML = 'Analyzing...<span class="loading"></span>';
+            content.innerHTML = '<span style="color: var(--text-muted);">Analyzing your portfolio...</span>';
+            try {
+                const res = await fetch(`${API_URL}/api/insights/portfolio`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (res.status === 503) {
+                    content.innerHTML = '<span style="color: var(--text-muted);">AI insights are not configured on the server. Please set an Anthropic API key in the backend.</span>';
+                    return;
+                }
+                const data = await res.json();
+                content.innerHTML = renderMarkdown(data.insight || 'No insight returned.');
+            } catch (error) {
+                console.error('Error loading portfolio insight:', error);
+                content.innerHTML = '<span style="color: var(--accent-orange);">Failed to load portfolio analysis. Please try again.</span>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Analyze Portfolio';
+            }
+        }
+
+        async function askAI() {
+            const input = document.getElementById('ask-ai-input');
+            const btn = document.getElementById('ask-ai-btn');
+            const messages = document.getElementById('ask-ai-messages');
+            const question = input.value.trim();
+            if (!question) return;
+
+            // Show user message
+            messages.innerHTML += `<div class="ask-ai-msg user">${question.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
+            input.value = '';
+            btn.disabled = true;
+            btn.textContent = '...';
+
+            // Show typing indicator
+            const typingId = 'typing-' + Date.now();
+            messages.innerHTML += `<div class="ask-ai-msg assistant" id="${typingId}" style="color: var(--text-muted);">Thinking...</div>`;
+            messages.scrollTop = messages.scrollHeight;
+
+            try {
+                const res = await fetch(`${API_URL}/api/insights`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ question })
+                });
+                const typingEl = document.getElementById(typingId);
+                if (res.status === 503) {
+                    if (typingEl) typingEl.innerHTML = '<span style="color: var(--text-muted);">AI insights are not configured on the server. Please set an Anthropic API key in the backend.</span>';
+                    return;
+                }
+                const data = await res.json();
+                if (typingEl) {
+                    typingEl.innerHTML = '<div class="ai-insight-body">' + renderMarkdown(data.insight || 'No response.') + '</div>';
+                }
+            } catch (error) {
+                console.error('Error asking AI:', error);
+                const typingEl = document.getElementById(typingId);
+                if (typingEl) typingEl.innerHTML = '<span style="color: var(--accent-orange);">Failed to get a response. Please try again.</span>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send';
+                messages.scrollTop = messages.scrollHeight;
+            }
         }
 
         // ==================== AUTH FUNCTIONS ====================
