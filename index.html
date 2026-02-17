@@ -2210,8 +2210,9 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
 
                 let spending = 0, income = 0;
                 transactions.forEach(t => {
-                    if (t.amount > 0) spending += t.amount;
-                    else income += Math.abs(t.amount);
+                    const amt = parseFloat(t.amount) || 0;
+                    if (amt > 0) spending += amt;
+                    else income += Math.abs(amt);
                 });
                 document.getElementById('txn-total-spending').textContent = formatCurrency(spending);
                 document.getElementById('txn-total-income').textContent = formatCurrency(income);
