@@ -2117,8 +2117,8 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
                                 <div style="font-weight: 500;">${txn.name || txn.description || 'Transaction'}</div>
                                 <div style="color: var(--text-muted); font-size: 12px;">${new Date(txn.date).toLocaleDateString()} &middot; ${txn.category || 'Uncategorized'}</div>
                             </div>
-                            <div style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: ${-txn.amount >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)'};">
-                                ${-txn.amount >= 0 ? '+' : '-'}${formatCurrency(Math.abs(txn.amount))}
+                            <div style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: ${-(parseFloat(txn.amount) || 0) >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)'};">
+                                ${-(parseFloat(txn.amount) || 0) >= 0 ? '+' : '-'}${formatCurrency(Math.abs(parseFloat(txn.amount) || 0))}
                             </div>
                         </div>
                     `).join('');
@@ -2228,8 +2228,8 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
                             <td style="padding: 10px 8px;">${txn.name || txn.description || '—'}</td>
                             <td style="padding: 10px 8px; color: var(--text-secondary);">${txn.category || '—'}</td>
                             <td style="padding: 10px 8px; color: var(--text-muted); font-size: 13px;">${txn.account_name || '—'}</td>
-                            <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 600; color: ${-txn.amount >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)'};">
-                                ${-txn.amount >= 0 ? '+' : '-'}${formatCurrency(Math.abs(txn.amount))}
+                            <td style="padding: 10px 8px; text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 600; color: ${-(parseFloat(txn.amount) || 0) >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)'};">
+                                ${-(parseFloat(txn.amount) || 0) >= 0 ? '+' : '-'}${formatCurrency(Math.abs(parseFloat(txn.amount) || 0))}
                             </td>
                         </tr>
                     `).join('');
