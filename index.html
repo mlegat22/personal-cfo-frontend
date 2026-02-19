@@ -542,6 +542,21 @@
         .ask-ai-msg { padding: 12px 16px; border-radius: 10px; margin-bottom: 10px; max-width: 85%; }
         .ask-ai-msg.user { background: var(--accent-blue); color: #fff; margin-left: auto; }
         .ask-ai-msg.assistant { background: var(--bg-tertiary); }
+
+        /* Admin toast notification */
+        .admin-toast {
+            position: fixed; top: 24px; right: 24px; z-index: 10000;
+            background: var(--bg-card); border: 1px solid var(--accent-orange);
+            border-radius: 10px; padding: 14px 20px; max-width: 360px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            animation: toastIn 0.3s ease-out, toastOut 0.3s ease-in 4.7s forwards;
+        }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
+
+        /* Badge pulse */
+        @keyframes badgePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.25); } }
+        .badge-pulse { animation: badgePulse 0.6s ease-in-out 3; }
     </style>
 </head>
 <body>
@@ -646,7 +661,7 @@
                         <span>⚙️</span> Settings
 		    </div>
 		    <div class="nav-item admin-only" data-page="admin" style="display: none;">
-                        <span>👤</span> Admin Panel
+                        <span>👤</span> Admin Panel <span id="admin-badge" style="display: none; background: var(--accent-orange); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-left: 6px;"></span>
                     </div>
                 </div>
             </nav>
@@ -2848,71 +2863,155 @@ function loadGoalsPage() {
 
 // ==================== ADMIN APPROVAL FUNCTIONS ====================
 
-// Check if admin and show admin panel
-async function checkAdmin() {
-    if (currentUser?.email === 'matthewlegat@gmail.com') {
-        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
+let adminPollInterval = null;
+let lastSeenPendingCount = 0;
+let lastSeenPendingIds = new Set();
+
+function showAdminToast(message) {
+    const existing = document.querySelector('.admin-toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = 'admin-toast';
+    toast.innerHTML = `<div style="font-weight: 600; margin-bottom: 4px;">New Account Request</div><div style="color: var(--text-secondary); font-size: 14px;">${message}</div>`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
+}
+
+function updateAdminBadge(count) {
+    const badge = document.getElementById('admin-badge');
+    if (!badge) return;
+    if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = 'inline';
+        if (count > lastSeenPendingCount) {
+            badge.classList.remove('badge-pulse');
+            void badge.offsetWidth;
+            badge.classList.add('badge-pulse');
+        }
     } else {
-        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+        badge.style.display = 'none';
     }
 }
 
-// Load pending users
+async function checkAdmin() {
+    if (currentUser?.email === 'matthewlegat@gmail.com') {
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
+        startAdminPolling();
+    } else {
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+        stopAdminPolling();
+    }
+}
+
+function startAdminPolling() {
+    if (adminPollInterval) return;
+    pollPendingUsers();
+    adminPollInterval = setInterval(pollPendingUsers, 30000);
+}
+
+function stopAdminPolling() {
+    if (adminPollInterval) {
+        clearInterval(adminPollInterval);
+        adminPollInterval = null;
+    }
+}
+
+async function pollPendingUsers() {
+    try {
+        const response = await fetch(`${API_URL}/api/admin/pending-users`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        const pending = data.pending || [];
+        const currentCount = pending.length;
+        const currentIds = new Set(pending.map(u => u.id));
+
+        // Detect new registrations
+        if (lastSeenPendingIds.size > 0) {
+            pending.forEach(user => {
+                if (!lastSeenPendingIds.has(user.id)) {
+                    showAdminToast(`${user.name} (${user.email})`);
+                }
+            });
+        }
+
+        updateAdminBadge(currentCount);
+        lastSeenPendingCount = currentCount;
+        lastSeenPendingIds = currentIds;
+
+        // If admin page is currently visible, refresh the list
+        const adminPage = document.getElementById('admin');
+        if (adminPage && adminPage.classList.contains('active')) {
+            renderPendingUsers(pending);
+        }
+    } catch (error) {
+        console.error('Error polling pending users:', error);
+    }
+}
+
+function renderPendingUsers(pending) {
+    const pendingList = document.getElementById('pending-users-list');
+    if (!pendingList) return;
+
+    if (pending.length > 0) {
+        pendingList.innerHTML = pending.map(user => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 2px solid var(--accent-orange); border-radius: 8px; margin-bottom: 12px; background: rgba(248, 81, 73, 0.05);">
+                <div>
+                    <div style="font-weight: 600; font-size: 16px;">${user.name}</div>
+                    <div style="color: var(--text-secondary); margin-top: 4px;">${user.email}</div>
+                    <div style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">
+                        Requested: ${new Date(user.requested_at).toLocaleString()}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="approveUser(${user.id}, '${user.email}')"
+                            class="btn"
+                            style="background: var(--accent-green);">
+                        Approve
+                    </button>
+                    <button onclick="denyUser(${user.id}, '${user.email}')"
+                            class="btn"
+                            style="background: var(--accent-orange);">
+                        Deny
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    } else {
+        pendingList.innerHTML = '<p style="color: var(--text-muted); padding: 16px;">No pending requests</p>';
+    }
+}
+
 async function loadPendingUsers() {
     try {
         const response = await fetch(`${API_URL}/api/admin/pending-users`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
         const data = await response.json();
-        
-        const pendingList = document.getElementById('pending-users-list');
-        
-        if (data.pending && data.pending.length > 0) {
-            pendingList.innerHTML = data.pending.map(user => `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 2px solid var(--accent-orange); border-radius: 8px; margin-bottom: 12px; background: rgba(248, 81, 73, 0.05);">
-                    <div>
-                        <div style="font-weight: 600; font-size: 16px;">${user.name}</div>
-                        <div style="color: var(--text-secondary); margin-top: 4px;">${user.email}</div>
-                        <div style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">
-                            Requested: ${new Date(user.requested_at).toLocaleString()}
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button onclick="approveUser(${user.id}, '${user.email}')" 
-                                class="btn" 
-                                style="background: var(--accent-green);">
-                            ✅ Approve
-                        </button>
-                        <button onclick="denyUser(${user.id}, '${user.email}')" 
-                                class="btn" 
-                                style="background: var(--accent-orange);">
-                            ❌ Deny
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        } else {
-            pendingList.innerHTML = '<p style="color: var(--text-muted); padding: 16px;">No pending requests</p>';
-        }
-        
-        // Also load approved users
+        const pending = data.pending || [];
+
+        renderPendingUsers(pending);
+        updateAdminBadge(pending.length);
+        lastSeenPendingCount = pending.length;
+        lastSeenPendingIds = new Set(pending.map(u => u.id));
+
         loadApprovedUsers();
     } catch (error) {
         console.error('Error loading pending users:', error);
     }
 }
 
-// Load approved users
 async function loadApprovedUsers() {
     try {
         const response = await fetch(`${API_URL}/api/admin/users`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
         const data = await response.json();
-        
+
         const approvedList = document.getElementById('approved-users-list');
         const approved = data.users.filter(u => u.approved);
-        
+
         if (approved.length > 0) {
             approvedList.innerHTML = approved.map(user => `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border-color);">
@@ -2924,8 +3023,8 @@ async function loadApprovedUsers() {
                         </div>
                     </div>
                     ${user.email !== currentUser.email ? `
-                        <button onclick="deleteUser(${user.id}, '${user.email}')" 
-                                class="btn" 
+                        <button onclick="deleteUser(${user.id}, '${user.email}')"
+                                class="btn"
                                 style="background: var(--accent-orange);">
                             Delete
                         </button>
@@ -2940,68 +3039,65 @@ async function loadApprovedUsers() {
     }
 }
 
-// Approve user
 async function approveUser(userId, email) {
     if (!confirm(`Approve ${email}?`)) return;
-    
+
     try {
         const response = await fetch(`${API_URL}/api/admin/approve-user/${userId}`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        
+
         if (response.ok) {
-            alert(`✅ ${email} has been approved and can now login!`);
+            alert(`${email} has been approved and can now login!`);
             loadPendingUsers();
         } else {
-            alert('❌ Failed to approve user');
+            alert('Failed to approve user');
         }
     } catch (error) {
-        alert('❌ Error approving user');
+        alert('Error approving user');
         console.error(error);
     }
 }
 
-// Deny user
 async function denyUser(userId, email) {
     if (!confirm(`Deny and delete account for ${email}? This cannot be undone.`)) return;
-    
+
     try {
         const response = await fetch(`${API_URL}/api/admin/deny-user/${userId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        
+
         if (response.ok) {
-            alert(`❌ ${email} has been denied`);
+            alert(`${email} has been denied`);
             loadPendingUsers();
         } else {
-            alert('❌ Failed to deny user');
+            alert('Failed to deny user');
         }
     } catch (error) {
-        alert('❌ Error denying user');
+        alert('Error denying user');
         console.error(error);
     }
 }
 
-// Delete approved user
 async function deleteUser(userId, email) {
     if (!confirm(`Delete ${email}? This cannot be undone.`)) return;
-    
+
     try {
         const response = await fetch(`${API_URL}/api/admin/users/${userId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        
+
         if (response.ok) {
-            alert(`✅ ${email} deleted`);
+            alert(`${email} deleted`);
             loadPendingUsers();
         } else {
-            alert('❌ Failed to delete user');
+            alert('Failed to delete user');
         }
     } catch (error) {
-        alert('❌ Error deleting user');
+        alert('Error deleting user');
         console.error(error);
     }
 }
