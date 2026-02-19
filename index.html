@@ -1064,32 +1064,30 @@
                     <p style="color: var(--text-secondary); margin-top: 12px;">Account preferences, security options, and data management.</p>
                 </div>
             </div>
-        </div>
-    </div>
 
             <!-- Admin Panel Page -->
-            <div id="admin" class="page" style="display: none;">
+            <div id="admin" class="page">
                 <div class="page-header">
-                    <h1>👤 Admin Panel</h1>
+                    <h1>Admin Panel</h1>
                     <p>Manage user access requests</p>
                 </div>
 
-                <!-- Pending Approvals -->
-                <div class="stat-card">
-                    <h3 style="margin-bottom: 16px;">⏳ Pending Approval Requests</h3>
+                <div class="stat-card" style="margin-bottom: 24px;">
+                    <h3 style="margin-bottom: 16px;">Pending Approval Requests</h3>
                     <div id="pending-users-list" style="min-height: 50px;">
-                         <p style="color: var(--text-muted); padding: 16px;">Loading...</p>
-                     </div>
-                 </div>
+                        <p style="color: var(--text-muted); padding: 16px;">Loading pending users...</p>
+                    </div>
+                </div>
 
-                <!-- Approved Users -->
                 <div class="stat-card">
-                    <h3 style="margin-bottom: 16px;">✅ Approved Users</h3>
+                    <h3 style="margin-bottom: 16px;">Approved Users</h3>
                     <div id="approved-users-list" style="min-height: 50px;">
-                        <p style="color: var(--text-muted); padding: 16px;">Loading...</p>
+                        <p style="color: var(--text-muted); padding: 16px;">Loading approved users...</p>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
     <!-- IBKR Connection Modal -->
     <div id="ibkr-modal" class="modal-overlay" style="display: none;">
         <div class="modal-box">
